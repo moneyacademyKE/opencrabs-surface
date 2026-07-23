@@ -9,5 +9,9 @@
                   :task (load-file "backup/init.bb")}
   backup:commit  {:doc "Scan, then commit snapshot locally. Usage: bb backup:commit 'message'"
                   :task (load-file "backup/commit.bb")}
+  backup:push    {:doc "Scan, then push sanitized snapshot to an existing git remote. Usage: bb backup:push [remote-name]"
+                  :task (load-file "backup/push.bb")}
+  backup:sync    {:doc "Collect, scan, commit if changed, then push to existing remote. Usage: bb backup:sync [message]"
+                  :task (load-file "backup/sync.bb")}
   backup:restore {:doc "Dry-run restore by default. Usage: bb backup:restore [--apply]"
                   :task (load-file "backup/restore.bb")}}}
