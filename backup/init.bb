@@ -1,0 +1,5 @@
+(load-file "backup/common.bb")
+(when-not (.exists (io/file root ".git"))
+  (println "Initializing git repo")
+  @(babashka.process/process ["git" "init"] {:dir root :out :inherit :err :inherit}))
+(println "Local backup repo ready at" (.getPath root))

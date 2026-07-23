@@ -1,0 +1,22 @@
+# Runtime/private OpenCrabs artifacts: never back these up.
+keys.toml
+.env
+*.env
+*.sqlite
+*.sqlite3
+*.db
+*.db-*
+*.sqlite-*
+secrets/
+logs/
+memory/
+channel_attachments/
+session/
+plans/
+state/
+target/
+.venv/
+node_modules/
+__pycache__/
+reports/*.json
+.DS_Store

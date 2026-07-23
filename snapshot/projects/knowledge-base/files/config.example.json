@@ -1,0 +1,12 @@
+{
+  "sources": ["github", "youtube"],
+  "github": {
+    "max_repos": 10,
+    "issues_per_repo": 20,
+    "commits_per_repo": 10
+  },
+  "youtube": {
+    "handle": "@yourhandle",
+    "max_videos": 30
+  }
+}

@@ -1,0 +1,138 @@
+[[tools]]
+name = "opencrabs_sqlite_query"
+description = "Run a read-only SELECT/WITH query against ~/.opencrabs/opencrabs.db for OpenCrabs session/message inspection. Rejects writes and non-read-only SQL."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 30
+command = '''
+python3 -c 'import os,sqlite3,sys,json,re; sql=sys.argv[1].strip(); low=sql.lower(); forbidden=re.compile(r"\b(insert|update|delete|drop|alter|create|replace|vacuum|attach|detach|pragma|reindex)\b");
+if not (low.startswith("select ") or low.startswith("with ")): raise SystemExit("Only SELECT/WITH queries are allowed");
+if forbidden.search(low): raise SystemExit("Rejected non-read-only SQL");
+con=sqlite3.connect(os.path.expanduser("~/.opencrabs/opencrabs.db")); con.row_factory=sqlite3.Row; rows=[dict(r) for r in con.execute(sql).fetchall()]; print(json.dumps(rows, ensure_ascii=False, indent=2))' '{{sql}}''''
+
+[tools.headers]
+
+[[tools.params]]
+name = "sql"
+type = "string"
+description = "Read-only SELECT or WITH SQL query to run against ~/.opencrabs/opencrabs.db"
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "parse_json"
+description = "Parse JSON response"
+executor = "shell"
+enabled = true
+requires_approval = true
+timeout_secs = 30
+command = "cat {{file}} | jq ."
+params = []
+
+[tools.headers]
+
+[[tools]]
+name = "gh_issue_create"
+description = "Create GitHub issue"
+executor = "shell"
+enabled = true
+requires_approval = true
+timeout_secs = 30
+command = "gh issue create --title '{{title}}' --body '{{body}}'"
+params = []
+
+[tools.headers]
+
+[[tools]]
+name = "docker_logs"
+description = "Get Docker container logs"
+executor = "shell"
+enabled = true
+requires_approval = true
+timeout_secs = 30
+command = "docker logs {{container}}"
+params = []
+
+[tools.headers]
+
+[[tools]]
+name = "kb_doctor"
+description = "Run the OpenCrabs knowledge-base doctor and return safe status JSON."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 30
+command = "cd ~/.opencrabs/projects/knowledge-base/files && ../bin/kb doctor --json"
+params = []
+
+[tools.headers]
+
+[[tools]]
+name = "kb_stats"
+description = "Return OpenCrabs knowledge-base source counts and recent ingest run status as JSON."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 30
+command = "cd ~/.opencrabs/projects/knowledge-base/files && ../bin/kb stats --json"
+params = []
+
+[tools.headers]
+
+[[tools]]
+name = "kb_search"
+description = "Search the OpenCrabs knowledge base with policy-aware output modes. Use mode=titles or snippets by default; full content requires private=true."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 30
+command = "cd ~/.opencrabs/projects/knowledge-base/files && ../bin/kb search --json --mode '{{mode}}' {{private_flag}} '{{query}}'"
+
+[tools.headers]
+
+[[tools.params]]
+name = "query"
+type = "string"
+description = "Search query"
+required = true
+coerce_empty_to = "reject"
+coerce_null_to = "reject"
+
+[[tools.params]]
+name = "mode"
+type = "string"
+description = "Output mode: titles, snippets, or full"
+required = false
+default = "snippets"
+coerce_empty_to = "default"
+coerce_null_to = "default"
+
+[[tools.params]]
+name = "private_flag"
+type = "string"
+description = "Pass --private only when full raw content is approved/private; otherwise leave empty"
+required = false
+default = ""
+coerce_empty_to = "default"
+coerce_null_to = "default"
+
+[[tools]]
+name = "kb_ask"
+description = "Return citation candidates for a KB question; degrades cleanly when synthesis is unavailable."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 30
+command = "cd ~/.opencrabs/projects/knowledge-base/files && bb kb:ask '{{query}}'"
+
+[tools.headers]
+
+[[tools.params]]
+name = "query"
+type = "string"
+description = "Question to retrieve citation candidates for"
+required = true
+coerce_empty_to = "reject"
+coerce_null_to = "reject"

@@ -1,0 +1,15 @@
+{:tasks
+ {kb:doctor {:doc "Check KB sidecar prerequisites and config"
+             :task (shell "bb scripts/kb.bb doctor")}
+  kb:stats {:doc "Show KB document counts and recent ingest runs"
+            :task (shell "bb scripts/kb.bb stats")}
+  kb:search {:doc "Search the KB. Usage: bb kb:search [--mode titles|snippets|full] [--source github|youtube] [--private] <query>"
+             :task (apply shell "bb" "scripts/kb.bb" "search" *command-line-args*)}
+  kb:ask {:doc "Ask with citation candidates; degrades cleanly without synthesis key"
+          :task (apply shell "bb" "scripts/kb.bb" "ask" *command-line-args*)}
+  kb:github-ingest {:doc "Native GitHub ingest via gh api"
+                    :task (apply shell "bb" "scripts/github_ingest.bb" *command-line-args*)}
+  kb:youtube-ingest {:doc "Native YouTube ingest via Data API"
+                     :task (apply shell "bb" "scripts/youtube_ingest.bb" *command-line-args*)}
+  kb:ingest {:doc "Run native ingestion. Usage: bb kb:ingest <github|youtube>"
+             :task (apply shell "bb" "scripts/kb.bb" "ingest" *command-line-args*)}}}

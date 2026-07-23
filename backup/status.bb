@@ -1,0 +1,5 @@
+(load-file "backup/common.bb")
+(println "Snapshot files:" (count (files-under snapshot-dir)))
+(when (.exists (io/file root ".git"))
+  (println "\nGit status:")
+  (print (:out @(babashka.process/process ["git" "status" "--short"] {:dir root :out :string :err :string}))))

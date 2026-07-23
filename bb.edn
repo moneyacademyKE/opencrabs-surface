@@ -1,0 +1,13 @@
+{:tasks
+ {backup:collect {:doc "Collect allowlisted OpenCrabs surface files into snapshot/"
+                  :task (load-file "backup/collect.bb")}
+  backup:scan    {:doc "Scan snapshot for denied paths, large files, and secret-looking content"
+                  :task (load-file "backup/scan.bb")}
+  backup:status  {:doc "Show git/snapshot status"
+                  :task (load-file "backup/status.bb")}
+  backup:init    {:doc "Initialize local git repo if missing"
+                  :task (load-file "backup/init.bb")}
+  backup:commit  {:doc "Scan, then commit snapshot locally. Usage: bb backup:commit 'message'"
+                  :task (load-file "backup/commit.bb")}
+  backup:restore {:doc "Dry-run restore by default. Usage: bb backup:restore [--apply]"
+                  :task (load-file "backup/restore.bb")}}}

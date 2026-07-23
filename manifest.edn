@@ -1,0 +1,48 @@
+{:source-root "~/.opencrabs"
+ :snapshot-dir "snapshot"
+ :max-file-bytes 1048576
+ :include-paths
+ ["skills"
+  "commands.toml"
+  "tools.toml"
+  "AGENTS.md"
+  "CODE.md"
+  "SOUL.md"
+  "TOOLS.md"
+  "SECURITY.md"
+  "BOOT.md"
+  "HEARTBEAT.md"
+  "projects/knowledge-base/engine"
+  "projects/knowledge-base/files/bb.edn"
+  "projects/knowledge-base/files/scripts"
+  "projects/knowledge-base/files/README.md"
+  "projects/knowledge-base/files/PORTING.md"
+  "projects/knowledge-base/files/CONNECTORS.md"
+  "projects/knowledge-base/files/IMPLEMENTATION.md"
+  "projects/knowledge-base/files/config.example.json"
+  "projects/knowledge-base/files/.env.example"]
+ :deny-path-fragments
+ ["keys.toml"
+  ".env"
+  "secrets/"
+  "logs/"
+  "memory/"
+  "channel_attachments/"
+  "session/"
+  "plans/"
+  "state/"
+  "target/"
+  ".venv/"
+  "node_modules/"
+  "__pycache__/"
+  "archived_inactive/"]
+ :deny-extensions
+ [".sqlite" ".sqlite3" ".db" ".db-shm" ".db-wal" ".pem" ".key" ".p12" ".pfx"]
+ :secret-patterns
+ ["(?i)api[_-]?key\\s*[:=]\\s*['\\\"]?[A-Za-z0-9_\\-]{20,}"
+  "(?i)secret\\s*[:=]\\s*['\\\"]?[A-Za-z0-9_\\-]{20,}"
+  "(?i)token\\s*[:=]\\s*['\\\"]?[A-Za-z0-9_\\-]{20,}"
+  "xox[baprs]-[A-Za-z0-9-]+"
+  "gh[pousr]_[A-Za-z0-9_]{20,}"
+  "sk-[A-Za-z0-9]{20,}"
+  "-----BEGIN [A-Z ]*PRIVATE KEY-----"]}

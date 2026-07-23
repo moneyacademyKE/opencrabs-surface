@@ -1,0 +1,137 @@
+[[commands]]
+name = "/openspeq-init"
+description = "Initialize or refresh a repo-local openspeq spec workspace using the installed openspeq-init skill."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `openspeq-init` from ~/.opencrabs/skills/openspeq-init/SKILL.md. Follow that skill exactly to initialize or refresh an openspeq spec workspace in the current repository."
+
+[[commands]]
+name = "/openspeq-plan"
+description = "Plan a change with openspeq by staging repo-native plan and delta docs using the installed openspeq-plan skill."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `openspeq-plan` from ~/.opencrabs/skills/openspeq-plan/SKILL.md. Follow that skill exactly to create a scoped plan under specs/_plans for the current repository change."
+
+[[commands]]
+name = "/openspeq-record"
+description = "Finalize an openspeq change by recording accepted staged specs with the installed openspeq-record skill."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `openspeq-record` from ~/.opencrabs/skills/openspeq-record/SKILL.md. Follow that skill exactly to merge accepted staged knowledge into permanent specs after implementation and verification."
+
+[[commands]]
+name = "/openspeq-review"
+description = "Review changes against openspeq mission, staged specs, and verification evidence using the installed openspeq-review skill."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `openspeq-review` from ~/.opencrabs/skills/openspeq-review/SKILL.md. Follow that skill exactly to review repository changes against mission, specs, and validation evidence."
+
+[[commands]]
+name = "/deploy"
+description = "Build, test, and deploy the current project to Cloudflare Workers/Pages via Wrangler."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `deploy` from ~/.opencrabs/skills/deploy/SKILL.md. Follow that skill exactly to build, test, and deploy the current project to Cloudflare."
+
+[[commands]]
+name = "/frontend-design"
+description = "Use the installed frontend-design skill for distinctive, intentional visual design guidance when building or reshaping UI."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `frontend-design` from ~/.opencrabs/skills/frontend-design/SKILL.md. Follow that skill exactly when building new UI or reshaping an existing one: create a distinctive subject-grounded design plan, critique it against generic defaults, then build from the revised plan."
+
+[[commands]]
+name = "/ruflo-import"
+description = "Import useful Ruflo/Claude Flow skills or commands into OpenCrabs-native local skills with compatibility mapping and safety linting."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `ruflo-import` from ~/.opencrabs/skills/ruflo-import/SKILL.md. Follow that skill exactly to inspect Ruflo/Claude Flow assets, convert portable skills/commands to OpenCrabs-native form, apply tool mapping and safety linting, then install validated local skills or commands."
+
+[[commands]]
+name = "/adr"
+description = "Create, review, index, or supersede Architecture Decision Records for a repository."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `adr` from ~/.opencrabs/skills/adr/SKILL.md. Follow that skill exactly to create, review, index, or supersede Architecture Decision Records in the current repository."
+
+[[commands]]
+name = "/sparc"
+description = "Run a SPARC-style spec-first implementation workflow using OpenCrabs plan/tasks/tools."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `sparc` from ~/.opencrabs/skills/sparc/SKILL.md. Follow that skill exactly to run Specification, Pseudocode, Architecture, Refinement, and Completion for the requested work."
+
+[[commands]]
+name = "/code-review-swarm"
+description = "Review repository changes from correctness, security, tests, maintainability, and performance perspectives."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `code-review-swarm` from ~/.opencrabs/skills/code-review-swarm/SKILL.md. Follow that skill exactly to review repository changes from multiple perspectives and return severity-bucketed findings."
+
+[[commands]]
+name = "/prompt-scan"
+description = "Scan third-party prompts/docs/webpages/agent instructions for prompt injection, PII leakage, and unsafe tool requests."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `prompt-scan` from ~/.opencrabs/skills/prompt-scan/SKILL.md. Follow that skill exactly to scan content for prompt injection, PII leakage risk, unsafe side effects, and policy conflicts."
+
+[[commands]]
+name = "/verification-witness"
+description = "Produce a machine-readable verification witness for a change, fix, release, or deployment."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `verification-witness` from ~/.opencrabs/skills/verification-witness/SKILL.md. Follow that skill exactly to produce a verification witness with files changed, commands run, results, links, risks, and verdict."
+
+[[commands]]
+name = "/design-engineering"
+description = "Umbrella design-engineering skill for distinctive UI design, polish, fluid interaction, motion review, and animation vocabulary."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `design-engineering` from ~/.opencrabs/skills/design-engineering/SKILL.md. Follow that skill exactly to route between visual direction, craft polish, fluid interaction, motion review, and vocabulary lookup."
+
+[[commands]]
+name = "/review"
+description = "Route review/audit/check requests to the right OpenCrabs specialist skill: code review, openspeq review, prompt scan, verification witness, security/repo audit, or design review."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `review` from ~/.opencrabs/skills/review/SKILL.md. Follow that skill exactly to choose and compose the correct specialist review route."
+
+[[commands]]
+name = "/axiom"
+description = "Delegate a bounded build task to the local Axiom repo so Axiom supervises an opencode harness against an observable workspace."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `axiom` from ~/.opencrabs/skills/axiom/SKILL.md. Follow that skill exactly to route the user's trailing request into a bounded Axiom-supervised opencode build workflow in ~/Desktop/axiom. Treat the trailing slash-command arguments as the task brief, make the task observable and verifiable, and be explicit that this launches delegated Axiom-managed work rather than hijacking an already-running opencode TUI session."
+
+[[commands]]
+name = "/mission-control"
+description = "Generate and send the Mission Control analytics report for this OpenCrabs instance."
+action = "prompt"
+prompt = "Use the built-in OpenCrabs tool `mission_control_report` to generate the current Mission Control analytics report, then present it clearly in the current chat."
+
+[[commands]]
+name = "/heartbeat-review"
+description = "Review the current heartbeat policy and summarize what the autoheal pulse checks and when it speaks."
+action = "prompt"
+prompt = "Read ~/.opencrabs/HEARTBEAT.md and summarize the current heartbeat policy: what it checks, when it reports, and the main safety rules. Keep the summary concise and operational."
+
+[[commands]]
+name = "/memory"
+description = "Search long-term memory (MEMORY.md) and daily memory logs for a query. Optional args become the search query."
+action = "prompt"
+prompt = "Use the `memory_search` tool to search long-term memory for the user's trailing arguments. If no arguments were given, load and summarize ~/.opencrabs/MEMORY.md instead (headings + recent entries only). Present hits concisely with the most relevant first."
+
+[[commands]]
+name = "/inflight"
+description = "Show currently in-flight non-plan-tracked work from the autoheal ledger."
+action = "prompt"
+prompt = "Read ~/.opencrabs/state/inflight.md. If there are no live entries below the comment marker, reply with a one-liner: 'No work in flight.' Otherwise list each entry with its timestamp and note any entry older than 15 minutes (likely interrupted). Do not modify the file."
+
+[[commands]]
+name = "/kb"
+description = "Operate the OpenCrabs-native knowledge base: setup, ingest, search, ask with citations, stats, and connector extension."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `knowledge-base` from ~/.opencrabs/skills/knowledge-base/SKILL.md. Follow that skill exactly to operate the local knowledge base in ~/.opencrabs/projects/knowledge-base/files/: setup config, ingest selected sources, run stats/search/ask, and extend connectors safely. Treat trailing slash-command arguments as the requested knowledge-base operation."
+
+[[commands]]
+name = "/knowledge-base"
+description = "Alias for /kb. Operate the OpenCrabs-native knowledge base: setup, ingest, search, ask with citations, stats, and connector extension."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `knowledge-base` from ~/.opencrabs/skills/knowledge-base/SKILL.md. Follow that skill exactly to operate the local knowledge base in ~/.opencrabs/projects/knowledge-base/files/: setup config, ingest selected sources, run stats/search/ask, and extend connectors safely. Treat trailing slash-command arguments as the requested knowledge-base operation."
+
+[[commands]]
+name = "/standup"
+description = "Daily standup summary"
+action = "prompt"
+prompt = "Summarize yesterday's commits"
+
+[[commands]]
+name = "/backup-surface"
+description = "Back up the unique reusable OpenCrabs surface to a sanitized local git workspace with allowlist collection, scanning, local commits, restore support, and explicit approval before GitHub push."
+action = "prompt"
+prompt = "Use the installed OpenCrabs skill `backup-surface` from ~/.opencrabs/skills/backup-surface/SKILL.md. Follow that skill exactly to collect, scan, status, initialize, locally commit, restore, or prepare a GitHub push for the sanitized OpenCrabs surface backup. Treat trailing slash-command arguments as the requested backup operation. Never push to GitHub without explicit approval."
