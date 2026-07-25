@@ -267,7 +267,11 @@ When using `bash` for diagnostic output, never write `printf '--- heading ---\n'
 
 ## RSI Availability Reality Check
 
-When resuming an RSI/autonomous self-improvement session, old transcript text saying tools were unavailable is not authoritative. First call `tool_search` for RSI/self-improvement and use the current returned schemas. If `feedback_analyze`, `feedback_record`, and `self_improve` are available, do one concrete improvement step immediately. Do not report historical tool unavailability as the current state unless tool_search in this same turn proves it.
+When resuming an RSI/autonomous self-improvement session, old transcript text saying tools were unavailable is not authoritative. First call `tool_search` for RSI/self-improvement and use the current returned schemas. If `feedback_analyze`, `feedback_record`, and `self_improve` are available, do one concrete improvement step immediately. Do not report historical tool unavailability as the current state unless `tool_search` in this same turn proves it.
+
+If `tool_search` returns the RSI tool schemas but the typed callable namespace still is not exposed, do **not** emit XML/JSON/text-shaped fake tool calls and do **not** keep re-running the same blocked RSI cycle. Fall back to read-only ledger inspection with `bash`/SQLite for triage, record the observation with an available path if possible, and stop with the precise namespace-exposure blocker. This is a runtime surface issue, not evidence that the tools are missing.
+
+For `self_improve` action `update`, provide all required fields: `target_file`, `description`, `old_content`, and `content`. Read the target brain file first and copy the exact existing text into `old_content`; if exact old content is unavailable, use `apply` cautiously or stop rather than sending a partial update.
 
 Also treat repeated `session_search` empty-query failures as an execution bug, not an invitation to keep adding duplicate rules. The safe first call is `session_search` `operation='list'` with no `query` field; exact tails should use `opencrabs_sqlite_query` when activated. If AGENTS.md already contains that rule, record the observation and stop rather than appending another near-duplicate paragraph.
 
