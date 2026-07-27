@@ -418,3 +418,17 @@ Read the current state before you modify it — everywhere, not just issues/PRs:
 
 Acting on a stale snapshot is how you clobber others' work, duplicate a fix, or close on outdated information.
 
+
+## Choosing Between Acting and Recording State (Cron / Autoheal / RSI)
+
+When the next step is a tool call — listing sessions, reading a tail, running a diagnostic — **make that call directly**. Recording a `session_context` decision *about* the call you're about to make adds a round-trip without advancing the work.
+
+**Use `session_context` for facts/decisions that must persist across turns**, recorded once per item. Re-recording the same intent each turn is a no-op that only grows the store.
+
+**Observed (2026-07-26):** a cron run recorded the same intent ("call session_search now") ~65 times across turns instead of issuing the call, so the work never advanced; the store also picked up a duplicate fragment from a truncated write. One decision per intent, then act on it.
+
+**If a context store file becomes malformed** (`~/.opencrabs/agents/session/context_<session-id>.json` — e.g. a duplicate fragment from a truncated write, surfaced as a JSON parse error such as "trailing characters at line N"): back it up (`cp <file> <file>.bak.$(date +%s)`), extract the first valid JSON object and discard trailing garbage, then re-validate with `jq empty <file>` and restore from backup on failure:
+
+    python3 -c 'import json,sys; p=sys.argv[1]; b=open(p,encoding="utf-8").read(); o,e=json.JSONDecoder().raw_decode(b); open(p,"w",encoding="utf-8").write(json.dumps(o,indent=2))' <file>
+
+Prefer repairing **inactive** session stores (avoids racing a live writer); a live session's next clean write replaces its own. Python `raw_decode` is the right tool here — shell `sed 's/}$//'` strips every line ending in `}` and corrupts nested braces, so use the `raw_decode` form above for JSON repair instead.
