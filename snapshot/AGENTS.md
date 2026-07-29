@@ -266,6 +266,14 @@ Respect existing repo lockfiles and package-manager markers. If `bun.lockb`/`bun
 
 When using `bash` for diagnostic output, never write `printf '--- heading ---\n'` directly. Some shell/builtin contexts can parse a leading `--` in the format position as an option and fail with `printf: --: invalid option`. Use `printf '%s\n' '--- heading ---'` or `echo '--- heading ---'` for headings. This is a tiny bug, but cron repeats tiny bugs like a woodpecker on espresso.
 
+## Bash macOS `timeout` Gotcha
+
+macOS ships **no `timeout` binary**. Inline/cron bash that does `timeout 110 python3 ...` dies with exit 127 `sh: line 1: timeout: command not found` (seen 2026-07-28 16:50). To bound a command's runtime on macOS, use one of:
+- `gtimeout 110 python3 ...` — requires `brew install coreutils` (`gtimeout`).
+- `perl -e 'alarm shift; exec @ARGV' 110 python3 ...` — zero deps, portable.
+- background + `sleep` + `kill`: `python3 ... & p=$!; ( sleep 110; kill $p 2>/dev/null ) & ; wait $p`.
+Never reach for bare `timeout` on macOS; it is a Linux coreutils name. Prefer the `perl` alarm one-liner when no coreutils guarantee exists.
+
 ## RSI Availability Reality Check
 
 When resuming an RSI/autonomous self-improvement session, old transcript text saying tools were unavailable is not authoritative. First call `tool_search` for RSI/self-improvement and use the current returned schemas. If `feedback_analyze`, `feedback_record`, and `self_improve` are available, do one concrete improvement step immediately. Do not report historical tool unavailability as the current state unless `tool_search` in this same turn proves it.
@@ -433,3 +441,45 @@ When the next step is a tool call — listing sessions, reading a tail, running 
     python3 -c 'import json,sys; p=sys.argv[1]; b=open(p,encoding="utf-8").read(); o,e=json.JSONDecoder().raw_decode(b); open(p,"w",encoding="utf-8").write(json.dumps(o,indent=2))' <file>
 
 Prefer repairing **inactive** session stores (avoids racing a live writer); a live session's next clean write replaces its own. Python `raw_decode` is the right tool here — shell `sed 's/}$//'` strips every line ending in `}` and corrupts nested braces, so use the `raw_decode` form above for JSON repair instead.
+
+## Inline Python / sh-embedded Script Discipline
+
+When embedding Python inside `bash` (`python3 -c '...'`, heredocs, or `python3 file.py` written on the fly), three avoidable failures recur in the ledger — all environmental, all on macOS system Python 3.9:
+
+- **f-string expression part cannot include a backslash.** `f"{d.get(\"words\",0):>5}"` → `SyntaxError`. The backslash-escaped quote inside `{...}` is illegal on 3.9 (legal only on 3.12+). Fix: hoist to a variable first (`w = d.get("words", 0); print(f"{w:>5}")`) or use the OTHER quote style so no escaping is needed (`f"{d['words']:>5}"`). This is the single most common inline-Python crash (seen 2026-07-28 13:01 and 03:46).
+- **`cat -A` is illegal on macOS BSD `cat`** (`cat: illegal option -- A`). GNU-ism. Use `cat -v`, `cat -e`, or `od -c` for whitespace/control-char inspection (seen 2026-07-27 13:38).
+- **Inline JSON `-d '{...}'` payloads break `sh` parsing** when they contain unescaped parens, quotes, or `'` (e.g. `sh: syntax error near unexpected token ('`). Don't hand-inline large JSON on a `curl -d` line — write the payload to a file and use `-d @file` / `--data-binary @file`, or use `http_request` (which takes a structured JSON `body`) instead of shelling out to `curl`.
+
+General rule for any inline script that grows past a few lines or touches quotes/JSON: **stop inlining — write a `.py` file in the persistent workspace and run it.** The `Scripting Runtime Preference` (Babashka first, Python only when justified) already nudges this; this section is the *failure-mode* complement: even when Python is the right runtime, keep it in a file, not jammed into a `bash -c` string where two languages' quoting rules fight each other.
+
+### Stale-metric guard (RSI)
+`self_improve` actual failure rate is **91.9% success (15 fail / 185 total)** as of 2026-07-28 — it is NOT the "40% failure" that appeared in stalled RSI prompts (that was a 4/10 small-sample snapshot). Before acting on any failure-rate claim from a transcript, re-derive it from live `feedback_analyze` (`tool_stats`); transcripts carry small-sample noise that made the 4752c RSI cycle loop over a ghost metric for ~800 turns.
+
+
+## Stolen Discipline (from OmegaClaw-Core gap analysis, 2026-07-28)
+
+Four transferable habits lifted from OmegaClaw (neural-symbolic agent, ASI Alliance). The heavy Hyperon/MeTTa/SWI-Prolog/ChromaDB stack was **rejected** — it doesn't fit OC's single-binary, Rust-first, cross-platform design, and its own measured failure rates show the symbolic layer amplifies rather than catches LLM errors. Only these small, mechanical, zero-dependency habits survived.
+
+### 1. Publish honest, quantified failure rates
+Before claiming a tool or workflow "works," measure it against the `feedback_ledger` (overall fail %, 7-day trend, worst tools by fail %). State the number even when it's ugly — 35% is reported as 35%. Use the `/failure-measure` skill; the `failure-measurement` cron posts the honest numbers on a schedule. Unmeasured "it's fine" claims are not allowed for anything load-bearing.
+
+### 2. Provenance + confidence tagging on durable facts
+When recording a durable fact to MEMORY/KB, stamp **where** it came from and **how sure** you are. Append `(src: <url|file|session|unverified>, conf: <h|m|l>)` to the fact line. Recall should be able to rank and decay items; unweighted prose is the failure mode this fixes. If you cannot cite a source, mark `(src: unverified, conf: low)` — don't silently memorize a claim from an LLM output or a stale transcript.
+
+### 3. Hybrid action gating — reversibility AND confidence
+Irreversible actions (push to main, delete, deploy, email, post publicly) require **both**: (a) reversibility clearance per the Earned-Autonomy table, **and** (b) a confidence signal that the action is correct. If confidence is low on an irreversible action, surface the uncertainty and **ask** — do not execute on a shaky signal just because the action class is approved. Reversible actions stay free to execute. This combines OC's reversibility-cost gating with a confidence gate; neither alone is sufficient for irreversible ops.
+
+### 4. Grounded writes
+Before asserting a durable fact (especially into MEMORY), fetch a verified source and record it. Don't memorize a claim from unverified LLM output or a stale session transcript without grounding. If no source can be found, that is itself information — mark it low-confidence per rule 2, don't launder it into a confident memory.
+
+## Phantom Loop-Terminator Tool Calls (Hard Rule)
+
+The feedback ledger is polluted with **phantom tool names that are not real tools** — `done`, `stop`, `final`, `end`, `halt-logging`, `no-more-logging`, `BREAK-NOW`, `stop-stop-stop`, `done-truly-stop`, `END-LOOP-FINAL`, and ~150 more variants. Every one logs as a 0%-success `tool_failure`. They come from the model trying to **end a turn by inventing a tool call named after its desire to stop.** This is the same defect that sent session "RSI autonomous cycle" (4752c740) into an 841-message death spiral of text-shaped `<function_calls>`/`<invoke>` blocks that never executed.
+
+**Rule: ending a turn is done by producing the closing text response and stopping. Nothing else.**
+- NEVER emit text-shaped `<function_calls>` / `<invoke>` XML blocks. They are TEXT. They do not execute. They wasted 841 turns in one session alone.
+- NEVER invent a tool name to signal "I'm done / stop / end / final / halt / break." There is no such tool. If you want to stop, write your final sentence and STOP.
+- If you have made the real tool calls your turn needs, STOP. Do not generate additional fake "done"/"final" variants hunting for termination — each is a logged failure and wasted tokens.
+- Corollary: when a turn feels complete, the correct action is a **text response**, never a fabricated tool call of any name.
+
+This pathology is distinct from `session_search` empty-query misuse and `session_context` JSON-corruption loops, and is the easiest to self-prevent: just end with words.
