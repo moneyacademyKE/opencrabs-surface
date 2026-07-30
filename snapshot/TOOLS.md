@@ -156,3 +156,13 @@ This is especially important in cron auto-resume commands where a cosmetic heade
   - **`messages`**: `id, session_id, role, content, sequence, created_at, token_count, cost, input_tokens, thinking, cache_creation_tokens, cache_read_tokens`
   - Other tables: `attachments, files, channel_messages, cron_jobs, usage_ledger, pending_requests, cron_job_runs, feedback_ledger, tool_executions, recent_paths, projects, goal_state, a2a_tasks` (introspect any of these with `SELECT name FROM pragma_table_info('<table>')` — that IS a read-only SELECT and works).
   - **Nonexistent columns you must NOT use:** `message_count` (compute it: `(SELECT COUNT(*) FROM messages m WHERE m.session_id = s.id)`), `is_cron` / `cron` (filter by `title = 'Cron'` or `category`), `started_at`/`finished_at` (use `created_at`/`updated_at`), `params` (not on any table). If a column is rejected, **do not retry a near-identical query** — run `SELECT name FROM pragma_table_info('<table>')` first to learn the real columns, then rewrite.
+
+## Provider tool-call emission failure (diagnostic fingerprint)
+
+A provider/model that **cannot emit structured `tool_use` blocks** — it narrates "I'll call the tools now" but produces zero real tool calls across many turns — is broken for agentic work. That is a provider problem, **not** a bug in your brain files. Stop adding tool rules; fix the provider. **Fingerprint** (one root cause, three signals):
+
+- The turn repeats the same intent ("making the call now…") with **zero tool calls actually executed**, turn after turn.
+- The **feedback ledger fills with 1-count hallucinated "tools"** (`DONE-DONE-DONE`, `STOP-LOOP-FINAL`, `final-final-final`, `halt-logging`, …) — text the model emitted that the ledger mis-recorded as tool names.
+- **`session_context` success collapses** (seen ~13%, thousands of failures) because each text-loop iteration appends a half-serialized write, corrupting the context store ("trailing characters at line N").
+
+**Fix:** reconfigure via `config_manager` to a function-calling-capable provider/model, or ensure a `[fallback]` chain exists so a non-tool-capable provider doesn't become sticky. An RSI/self-improvement cycle assigned to such a provider will loop until budget — it is **not resumable on that provider**. Resume it on a working provider instead (verified 2026-07-29: the stalled RSI cycle ran fine once moved off `custom:lm-studio`).
