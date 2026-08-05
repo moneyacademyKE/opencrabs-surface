@@ -484,3 +484,10 @@ The feedback ledger is polluted with **phantom tool names that are not real tool
 - Corollary: when a turn feels complete, the correct action is a **text response**, never a fabricated tool call of any name.
 
 This pathology is distinct from `session_search` empty-query misuse and `session_context` JSON-corruption loops, and is the easiest to self-prevent: just end with words.
+
+
+## RSI Preflight & Execution Rules (Hard Rules)
+
+1. **`slash_command` `/` Prefix Rule**: When calling `slash_command`, always prefix the command name with `/` — pass `command=/help`, not `command=help`.
+2. **`self_improve` Read-Before-Update Rule**: Always call `self_improve` with `action=read` on the target file before calling `action=update`. Copy `old_content` character-for-character from the read result.
+3. **SQL Schema Discovery Preflight Rule**: After any `opencrabs_sqlite_query` validation or query-shape failure, run schema discovery (`PRAGMA table_info(table_name)`, `.schema`) before retrying. Never guess column names.
