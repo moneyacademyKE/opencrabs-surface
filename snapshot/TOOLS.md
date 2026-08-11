@@ -101,7 +101,7 @@ Audio: all output OGG/Opus via ffmpeg. Models: whisper in `~/.local/share/opencr
 - When an RSI/autonomous-improvement prompt mentions tools that are not visible in the current schema (`feedback_analyze`, `self_improve`, `rsi_propose`, etc.), call `tool_search("feedback analyze self improvement rsi propose")` before saying they are unavailable. Lazy tools may hide them until activated.
 - `session_search` cannot fetch a session tail with an empty query. Use targeted substrings from the session title/task, or list sessions and search likely terms; do not retry empty/space queries.
 - For cron auto-resume, skip the current `Cron` session when choosing “last work” unless the actual pending work is inside that cron. Prefer the most recent non-cron human/work session.
-- `bash` heredocs may be blocked by the shell wrapper’s bare-REPL guard. Prefer `python3 -c '...'`, `node -e '...'`, or write a temp/persistent script file before executing.
+- `bash` heredocs may be blocked by the shell wrapper’s bare-REPL guard. Prefer `bb -e '...'`, `node -e '...'`, or write a temp/persistent script file before executing.
 
 ## Tool Parameter Gotchas (from feedback ledger)
 
@@ -134,7 +134,7 @@ Never retry `session_search` with `operation="recent"`, an empty query, or white
 
 When resuming a non-cron session from a cron heartbeat, avoid searching `session="all"` with a generic title token like `RSI` after listing sessions: the search can match the current Cron session because prior tool outputs echo that title. Use the exact target session selector (`session="RSI autonomous cycle"`, `session="Axiom Phase 5-8 Completion"`, etc.) plus a non-empty distinctive query from the task text. If that still does not surface the actual last messages, use the documented read-only DB fallback rather than retrying broad searches.
 
-For bash checks in cron, omit `working_directory` entirely or set it to `/`; never pass `~` or an empty string. Put `cd ~/project` inside the command so the shell expands it. Avoid `python3 - <<'PY'` heredocs in this harness because the bare-REPL guard may misclassify them; use `python3 -c`, `node -e`, or write a small script file and run it.
+For bash checks in cron, omit `working_directory` entirely or set it to `/`; never pass `~` or an empty string. Put `cd ~/project` inside the command so the shell expands it. Avoid `bb - <<'CLJ'` heredocs in this harness because the bare-REPL guard may misclassify them; use `bb -e`, `node -e`, or write a small script file and run it.
 
 ## Built-in Tool Failure Triage
 
@@ -166,3 +166,26 @@ A provider/model that **cannot emit structured `tool_use` blocks** — it narrat
 - **`session_context` success collapses** (seen ~13%, thousands of failures) because each text-loop iteration appends a half-serialized write, corrupting the context store ("trailing characters at line N").
 
 **Fix:** reconfigure via `config_manager` to a function-calling-capable provider/model, or ensure a `[fallback]` chain exists so a non-tool-capable provider doesn't become sticky. An RSI/self-improvement cycle assigned to such a provider will loop until budget — it is **not resumable on that provider**. Resume it on a working provider instead (verified 2026-07-29: the stalled RSI cycle ran fine once moved off `custom:lm-studio`).
+
+
+## OpenCrabs Slash Commands Reference
+
+| Slash Command | Parameter / Option | Description & Action |
+| :--- | :--- | :--- |
+| `/plan <goal>` | Goal string | Switches session to `/plan` drafting model (`cx/gpt-5.6-sol`) and initializes plan. |
+| `/execute` | None | Swaps to execution model and runs approved plan steps to completion. |
+| `/models <name>` | `<provider>/<model>` | Switches active provider & model (e.g. `/models infer/cx/gpt-5.6-terra`). |
+| `/compact` | None | Forces immediate context compaction & summary generation. |
+| `/doctor` | None | Runs system health audit across config, keys, database, and channels. |
+
+
+## Vision & Media Coordinate Scaling
+
+1. **Screenshot Scale Factor**: When computing click coordinates or crop regions from a screenshot, always check whether the image was downscaled. If the displayed resolution differs from the on-disk resolution, multiply all coordinates by `(original_width / displayed_width)` before using them.
+2. **Notebook (.ipynb) Handling**: When reading `.ipynb` files, skip base64-encoded cell outputs and focus on source cells. For large dataframe outputs (>10,000 chars), extract the shape/columns with `jq` instead of reading the full output.
+
+
+## Open-Model Tool Call Recovery
+
+1. **Common Schema Mistakes to Self-Check**: Before retrying a failed tool call, check if you made one of these 4 common mistakes: (1) sent `null` for an optional field instead of omitting it, (2) sent a JSON array as a string (`"[\"a\"]"` instead of `["a"]`), (3) wrapped a single argument in `{}` where the schema expected an array, (4) passed a bare string where an array was expected. Fix the shape, don't just retry.
+2. **Transparent Defaults**: When a tool requires coupled fields and you supply a default for a missing one (e.g. `limit=2000` when only `offset` was given), state the default in your response so the user can correct it.

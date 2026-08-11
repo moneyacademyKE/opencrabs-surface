@@ -153,7 +153,7 @@ opencrabs service start
 
 ## Self-Knowledge
 When asked about OpenCrabs features, always check the source:
-- Read `~/srv/rs/opencrabs/README.md` for the full feature list and docs
+- Read `~/.opencrabs/src/README.md` for the full feature list and docs
 - Fetch `docs.opencrabs.com` for the latest documentation
 - Never answer from memory alone — you will get it wrong. The docs are the source of truth.
 
@@ -162,7 +162,7 @@ When asked about OpenCrabs features, always check the source:
 Upgrading is just a `git pull` + rebuild. Your workspace is safe.
 
 ```bash
-cd /srv/rs/opencrabs    # or wherever your source lives
+cd ~/.opencrabs/src/    # or wherever your source lives
 git pull origin main
 cargo build --release
 # ~/.opencrabs/ is NEVER touched — your config, memory, skills, and customizations persist

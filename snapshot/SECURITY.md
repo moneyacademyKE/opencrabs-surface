@@ -102,7 +102,7 @@ A malicious skill/package follows this pattern:
 1. **Ask source** — Where is this from? Official repo or random?
 2. **Check reputation** — Does the author have something to lose?
 3. **Read ALL files** — Not just SKILL.md, every referenced file
-4. **Run security greps** — See commands above
+4. **Run security greps** — `grep -rn 'process\.env\|curl\|wget\|authorized_keys\|\.env\|\.pem\|exec\|eval' <path>`
 5. **Flag concerns** — Tell your human if anything looks suspicious
 6. **Sandbox first** — If uncertain, test in isolated environment
 
@@ -241,3 +241,8 @@ Examples:
 ## Updates to This Policy
 
 This file can be updated as new security considerations emerge. Any changes should be logged in memory with rationale.
+
+
+## Infinite Device Path Blocklist
+
+1. **Never request `read_file`** on `/dev/zero`, `/dev/urandom`, `/dev/stdin`, or `/dev/fd/*` — these are infinite streams that will hang the tool indefinitely. Check paths before reading if they might resolve to a device file.
