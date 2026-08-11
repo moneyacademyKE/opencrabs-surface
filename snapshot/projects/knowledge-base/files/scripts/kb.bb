@@ -11,6 +11,7 @@
 (def config-path (fs/file kb-home "config.json"))
 (def env-path (fs/file kb-home ".env"))
 (def rust-bin (fs/file kb-home ".." "bin" "kb"))
+(def babashka-bin "/opt/homebrew/bin/bb")
 
 (defn println-err [& xs]
   (binding [*out* *err*]
@@ -22,8 +23,11 @@
 
 (defn exists? [p] (fs/exists? p))
 
+(defn inherited-env []
+  (into {} (System/getenv)))
+
 (defn run-proc [& args]
-  (apply p/shell {:out :string :err :string :continue true} args))
+  (apply p/shell {:out :string :err :string :continue true :env (inherited-env)} args))
 
 (defn shell! [& args]
   (let [res (apply sh/sh args)]
@@ -110,7 +114,7 @@
 (defn ingest-native [source script args]
   (load-dotenv)
   (let [started (timestamp)
-        proc (apply run-proc "bb" script args)]
+        proc (apply run-proc babashka-bin script args)]
     (if (zero? (:exit proc))
       (let [upsert (p/shell {:in (:out proc) :out :string :err :string :continue true}
                             (str rust-bin) "upsert-jsonl" "--json" "--source" source "--run-started-at" started)]

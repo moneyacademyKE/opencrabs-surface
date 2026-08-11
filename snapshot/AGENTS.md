@@ -4,7 +4,7 @@
 
 This folder is home. Treat it that way.
 
-## 🚨 Top-10 Critical Rules (Tier 1 — Non-Negotiable)
+## 🚨 Top Critical Rules (Tier 1 — Non-Negotiable)
 
 1. **Write-Before-Reply Memory Rule**: When the user provides a preference, workflow rule, or correction, write the memory entry to `memory/YYYY-MM-DD.md` or `MEMORY.md` *before* outputting response text.
 2. **Infinite Device Path Blocklist**: Never request `read_file` on `/dev/zero`, `/dev/urandom`, `/dev/stdin`, or `/dev/fd/*` — these are infinite streams that hang the tool.
@@ -54,7 +54,7 @@ You wake up fresh each session. These files are your continuity:
 Compaction triggers automatically at 80% context usage. The system generates a continuation summary (chronological analysis, files modified, user constraints, errors+fixes, pending tasks, last 8 messages). **Micro-Tool Trimming Rule**: When building continuation summaries or compaction documents, collapse completed diagnostic/test tool outputs (`cargo test`, `pnpm build`, `ls -la`) into 1-line verdicts (e.g. `[cargo test: exit 0, 120 tests passed]`) rather than embedding raw terminal outputs in the summary. After compaction you receive that summary + recent messages — read it carefully, load ONLY the relevant brain file if you need more (never all at once), and continue the task immediately. Don't repeat completed work or ask what to do. Compaction persists across restarts. Type `/compact` to force it.
 
 ### 🧠 MEMORY.md - Your Long-Term Memory
-- **ONLY load in main session** (direct chats with your human) — NOT in shared contexts (Discord, group chats). It holds personal context that shouldn't leak to strangers.
+- **ONLY load in main session** (TUI direct chats or Telegram DM with your human) — NOT in Telegram groups. It holds personal context that shouldn't leak to group participants.
 - You can read, edit, and update it freely in main sessions — it's the distilled essence, not raw logs.
 
 ### 🔥 When to write to memory
@@ -234,7 +234,7 @@ After `tool_search` activates a non-core tool, use the schema it just returned a
 
 When ANY tool call fails on parameter shape, validation, schema mismatch, or a "field is required / not allowed" rejection, enter **repair mode** — do not retry the same broken shape.
 
-1. **Classify the failure first.** Was it: wrong param name, wrong param type, unknown/extra field, missing required field, value rejected by validation, read-only contract rejection, or a genuine runtime error? Name it before acting.
+1. **Bound evidence before retrying.** Read the failure receipt and collect at most one cheapest authoritative diagnostic (the active schema, `--help`, a schema/column listing, or a minimal path check) to identify the violated field or constraint; make one materially corrected retry. If it remains ambiguous, stop or escalate rather than repeatedly rediscovering or guessing.
 2. **Do not echo the same call back.** A second identical attempt is a wasted turn. Change something meaningful: drop the suspect optional field, fix the type, rename to a declared param, or narrow the input.
 3. **Drop risky optional params on retry.** If an optional field might be the culprit (`query: ""`, `working_directory: "~"`, an invented alias), retry WITHOUT it before anything else. Optional means omittable — exploit that.
 4. **Inspect before guessing.** For DB/column/schema errors, list columns or schema first; never freestyle a query against column names you haven't verified.
@@ -447,59 +447,39 @@ Acting on a stale snapshot is how you clobber others' work, duplicate a fix, or 
 
 ## Choosing Between Acting and Recording State (Cron / Autoheal / RSI)
 
-When the next step is a tool call — listing sessions, reading a tail, running a diagnostic — **make that call directly**. Recording a `session_context` decision *about* the call you're about to make adds a round-trip without advancing the work.
+When the next step is a tool call — listing sessions, reading a tail, running a diagnostic — **make that call directly**. Recording a `session_context` decision *about* the call you're about to make adds a round-trip without advancing the work. Record `session_context` once per durable fact/decision that must persist across turns.
 
-**Use `session_context` for facts/decisions that must persist across turns**, recorded once per item. Re-recording the same intent each turn is a no-op that only grows the store.
+**`session_context` Plan Gate Rule (Hard)**: Before calling `session_context` in any session with an active plan, first call `plan status` to check whether the plan gate is raised. If gate is raised (`session_context` is blocked), you MUST call `plan add_tasks` + `plan start` to seed the checklist before `session_context` will accept writes. Attempting `session_context` without seeding always fails with the plan gate error.
 
-**Observed (2026-07-26):** a cron run recorded the same intent ("call session_search now") ~65 times across turns instead of issuing the call, so the work never advanced; the store also picked up a duplicate fragment from a truncated write. One decision per intent, then act on it.
-
-**If a context store file becomes malformed** (`~/.opencrabs/agents/session/context_<session-id>.json` — e.g. a duplicate fragment from a truncated write, surfaced as a JSON parse error such as "trailing characters at line N"): back it up (`cp <file> <file>.bak.$(date +%s)`), extract the first valid JSON object and discard trailing garbage, then re-validate with `jq empty <file>` and restore from backup on failure:
-
-    bb -e '(let [p (first *command-line-args*) b (slurp p)] (spit p b))' <file>
-
-Prefer repairing **inactive** session stores (avoids racing a live writer); a live session's next clean write replaces its own. Babashka `cheshire.core` / `clojure.data.json` is the right tool here — shell `sed 's/}$//'` strips every line ending in `}` and corrupts nested braces, so use the `raw_decode` form above for JSON repair instead.
+**`session_context` JSON Corruption Repair (Hard)**: If `session_context` fails with `trailing characters at line N column N`, the context store is malformed. Repair sequence:
+1. `bash: cp ~/.opencrabs/agents/session/context_<id>.json ~/.opencrabs/agents/session/context_<id>.json.bak.$(date +%s)`
+2. Extract the first valid JSON object using Babashka: `bb -e '(require ["cheshire.core" :as json]) (-> (slurp "<path>") (json/parse-string true) (json/generate-string true))'`
+3. Write the clean JSON back to the file.
+4. Validate: `bash: jq empty <path> && echo OK`
 
 ## Babashka / sh-embedded Script Discipline
 
-When embedding Babashka scripts inside `bash` (`bb -e '...'`, heredocs, or `bb script.clj` written on the fly), three avoidable failures recur in the ledger — all environmental, when running shell script snippets:
+- Keep Clojure/Babashka expressions clean without unescaped string quote collisions.
+- **`cat -A` is illegal on macOS BSD `cat`**. Use `cat -v`, `cat -e`, or `od -c`.
+- **Inline JSON `-d '{...}'` payloads break `sh` parsing**. Write payloads to files (`-d @file`) or use `http_request`.
+- For inline scripts past a few lines or touching quotes/JSON: **write a `.clj` Babashka script file in the persistent workspace and execute it.**
 
-- **Keep Clojure/Babashka expressions clean without unescaped string quote collisions.
-- **`cat -A` is illegal on macOS BSD `cat`** (`cat: illegal option -- A`). GNU-ism. Use `cat -v`, `cat -e`, or `od -c` for whitespace/control-char inspection (seen 2026-07-27 13:38).
-- **Inline JSON `-d '{...}'` payloads break `sh` parsing** when they contain unescaped parens, quotes, or `'` (e.g. `sh: syntax error near unexpected token ('`). Don't hand-inline large JSON on a `curl -d` line — write the payload to a file and use `-d @file` / `--data-binary @file`, or use `http_request` (which takes a structured JSON `body`) instead of shelling out to `curl`.
+### Live Failure-Rate Verification
+Before acting on failure-rate claims from transcripts, re-derive them from live `feedback_analyze` (`tool_stats`). Transcripts carry small-sample noise.
 
-General rule for any inline script that grows past a few lines or touches quotes/JSON: **stop inlining — write a `.clj` Babashka script file in the persistent workspace and run it.** This section is the *failure-mode* complement: keep Babashka logic clean in dedicated `.clj` script files, not jammed into a `bash -c` string where two languages' quoting rules fight each other.
+## Stolen Discipline
 
-### Stale-metric guard (RSI)
-`self_improve` actual failure rate is **91.9% success (15 fail / 185 total)** as of 2026-07-28 — it is NOT the "40% failure" that appeared in stalled RSI prompts (that was a 4/10 small-sample snapshot). Before acting on any failure-rate claim from a transcript, re-derive it from live `feedback_analyze` (`tool_stats`); transcripts carry small-sample noise that made the 4752c RSI cycle loop over a ghost metric for ~800 turns.
-
-
-## Stolen Discipline (from OmegaClaw-Core gap analysis, 2026-07-28)
-
-Four transferable habits lifted from OmegaClaw (neural-symbolic agent, ASI Alliance). The heavy Hyperon/MeTTa/SWI-Prolog/ChromaDB stack was **rejected** — it doesn't fit OC's single-binary, Rust-first, cross-platform design, and its own measured failure rates show the symbolic layer amplifies rather than catches LLM errors. Only these small, mechanical, zero-dependency habits survived.
-
-### 1. Publish honest, quantified failure rates
-Before claiming a tool or workflow "works," measure it against the `feedback_ledger` (overall fail %, 7-day trend, worst tools by fail %). State the number even when it's ugly — 35% is reported as 35%. Use the `/failure-measure` skill; the `failure-measurement` cron posts the honest numbers on a schedule. Unmeasured "it's fine" claims are not allowed for anything load-bearing.
-
-### 2. Provenance + confidence tagging on durable facts
-When recording a durable fact to MEMORY/KB, stamp **where** it came from and **how sure** you are. Append `(src: <url|file|session|unverified>, conf: <h|m|l>)` to the fact line. Recall should be able to rank and decay items; unweighted prose is the failure mode this fixes. If you cannot cite a source, mark `(src: unverified, conf: low)` — don't silently memorize a claim from an LLM output or a stale transcript.
-
-### 3. Hybrid action gating — reversibility AND confidence
-Irreversible actions (push to main, delete, deploy, email, post publicly) require **both**: (a) reversibility clearance per the Earned-Autonomy table, **and** (b) a confidence signal that the action is correct. If confidence is low on an irreversible action, surface the uncertainty and **ask** — do not execute on a shaky signal just because the action class is approved. Reversible actions stay free to execute. This combines OC's reversibility-cost gating with a confidence gate; neither alone is sufficient for irreversible ops.
-
-### 4. Grounded writes
-Before asserting a durable fact (especially into MEMORY), fetch a verified source and record it. Don't memorize a claim from unverified LLM output or a stale session transcript without grounding. If no source can be found, that is itself information — mark it low-confidence per rule 2, don't launder it into a confident memory.
+1. **Publish honest, quantified failure rates**: Measure tool failure rates against `feedback_ledger` using `/failure-measure` before claiming a tool works.
+2. **Provenance + confidence tagging**: Stamp durable facts written to MEMORY/KB with `(src: <url|file|session|unverified>, conf: <h|m|l>)`. Mark unverified claims as `(src: unverified, conf: low)`.
+3. **Hybrid action gating**: Irreversible actions require both Earned-Autonomy clearance and high confidence. Ask if confidence is low.
+4. **Grounded writes**: Verify source documents before writing durable facts into long-term memory.
 
 ## Phantom Loop-Terminator Tool Calls (Hard Rule)
 
-The feedback ledger is polluted with **phantom tool names that are not real tools** — `done`, `stop`, `final`, `end`, `halt-logging`, `no-more-logging`, `BREAK-NOW`, `stop-stop-stop`, `done-truly-stop`, `END-LOOP-FINAL`, and ~150 more variants. Every one logs as a 0%-success `tool_failure`. They come from the model trying to **end a turn by inventing a tool call named after its desire to stop.** This is the same defect that sent session "RSI autonomous cycle" (4752c740) into an 841-message death spiral of text-shaped `<function_calls>`/`<invoke>` blocks that never executed.
-
-**Rule: ending a turn is done by producing the closing text response and stopping. Nothing else.**
-- NEVER emit text-shaped `<function_calls>` / `<invoke>` XML blocks. They are TEXT. They do not execute. They wasted 841 turns in one session alone.
-- NEVER invent a tool name to signal "I'm done / stop / end / final / halt / break." There is no such tool. If you want to stop, write your final sentence and STOP.
-- If you have made the real tool calls your turn needs, STOP. Do not generate additional fake "done"/"final" variants hunting for termination — each is a logged failure and wasted tokens.
-- Corollary: when a turn feels complete, the correct action is a **text response**, never a fabricated tool call of any name.
-
-This pathology is distinct from `session_search` empty-query misuse and `session_context` JSON-corruption loops, and is the easiest to self-prevent: just end with words.
+**Ending a turn is done by producing the closing text response and stopping. Nothing else.**
+- NEVER emit text-shaped `<function_calls>` / `<invoke>` XML blocks.
+- NEVER invent non-existent tool names (`done`, `stop`, `final`, `end`, `halt`) to signal completion.
+- When all required tool calls for a turn are complete, output a clear text response and STOP.
 
 
 ## RSI Preflight & Execution Rules (Hard Rules)
@@ -515,9 +495,9 @@ This pathology is distinct from `session_search` empty-query misuse and `session
 2. **Pre-Task Gap Analysis**: When a change spans **3+ files, introduces a new dependency, or alters an API boundary**, begin with a Rich Hickey Gap Analysis (feature set differences table, trade-offs, complexity vs. utility, actionable recommendation). Skip for single-file fixes or cosmetic changes.
 3. **Architectural Decision Record (ADR) & Playbook**: When the project already has a `docs/adr/` directory and the change affects storage, API boundaries, runtime architecture, or major trade-offs, document the choice in `docs/adr/ADR-xxx.md` and update `PLAYBOOK.md` before walkthrough.
 4. **Task Certification**: After multi-file features or refactors (not trivial fixes), conclude by validating Rich Hickey certification against user requirements, docs, and git state.
-4. **Babashka & Scripting**: Use Babashka (`bb`) for all script automation. Never use `npm`.
-5. **File Size Limit**: Soft target: **250 LOC**. Hard ceiling: **500 LOC**. Split at 250; reject at 500. Test files (`*_test.rs`, `tests/*`, `*.test.*`, `*_spec.*`) are explicitly exempt.
-6. **Red/Green TDD & Intention-Revealing Naming**: Follow Red/Green TDD for behavior changes and optimize for high cohesion and low coupling.
+5. **Babashka & Scripting**: Use Babashka (`bb`) for all script automation. Never use `npm`.
+6. **File Size Limit**: Soft target: **250 LOC**. Hard ceiling: **500 LOC**. Split at 250; reject at 500. Test files (`*_test.rs`, `tests/*`, `*.test.*`, `*_spec.*`) are explicitly exempt.
+7. **Red/Green TDD & Intention-Revealing Naming**: Follow Red/Green TDD for behavior changes and optimize for high cohesion and low coupling.
 
 
 ## Axiom Autonomous Loop Tenets (Hard Rules)
@@ -556,6 +536,8 @@ This pathology is distinct from `session_search` empty-query misuse and `session
 2. **Adversarial Filename Repair**: On `file not found` errors, before reporting a missing path: (a) run `ls` on the parent directory, (b) check for Unicode discrepancies (curly quotes `‘` vs `'`, non-breaking spaces vs regular spaces), (c) try fuzzy matching (`AGENT.md` → `AGENTS.md`).
 3. **Non-Fatal Dead End Handling**: When a read returns empty content, past-EOF, or a truncation notice, treat it as an informative fact (`"file is empty"`, `"resume at offset=1847"`) — do not treat it as an error or apologize for it.
 4. **Subagent Response Bounding**: When receiving output from a subagent, summarize key findings if the raw response exceeds 2,000 lines or 16 KB before passing it into the parent session context.
+5. **Edit Preflight Line Match Guard**: Before invoking `edit_file`, verify the target line range with a fresh `read_file` to ensure `old_content` matches character-for-character including leading whitespace.
+6. **Plan-Task Worker Completion Rule (Hard)**: When running as a plan-task worker sub-agent, the FINAL action before closing the turn MUST be `plan complete #N` to mark the task done on the parent checklist. Never exit a plan-task session without explicitly completing the task — if the sub-agent ends without calling `plan complete`, the parent will see the task stuck as `InProgress` forever and the plan will not advance.
 
 
 ## Tool-Input Repair & Contract Design (from Ahmad Awais / Command Code)

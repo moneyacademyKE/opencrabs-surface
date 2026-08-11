@@ -121,7 +121,7 @@ executor = "shell"
 enabled = true
 requires_approval = false
 timeout_secs = 30
-command = "cd ~/.opencrabs/projects/knowledge-base/files && bb kb:ask '{{query}}'"
+command = "cd ~/.opencrabs/projects/knowledge-base/files && /opt/homebrew/bin/bb kb:ask '{{query}}'"
 
 [tools.headers]
 

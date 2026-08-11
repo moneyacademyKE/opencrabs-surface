@@ -306,7 +306,9 @@ When using `write_file` to create a file in a directory that may not exist yet, 
 ## Shell Discipline (from feedback ledger)
 
 - **Verify a directory is a git repo before running git in it.** `git status`/`log`/`diff` in a non-git directory exits **128** with "fatal: not a git repository". Guard with `git rev-parse --is-inside-work-tree 2>/dev/null` first, or check for a `.git` entry. A project directory existing on disk ≠ it being git-initialized — `~/Desktop/axiom` is a known non-repo example that has burned ~6 calls.
-- **Never run `find ~` / `find /Users/moe` unscoped.** Walking the entire home directory times out at the 120s limit. Scope `find` to a known project path, or prefer `glob` / `ls --recursive` which respect tool limits. If you genuinely must search home, narrow by `-name` + `-maxdepth` and redirect stderr (`2>/dev/null`).
+- **Guard exploratory grep commands with `|| true`.** When searching for patterns where zero matches are acceptable, append `|| true` (e.g. `grep -rn "pattern" . || true`) so expected 0-match results exit 0 instead of recording tool errors.
+- **Never run `find ~` / `find /Users/moe` unscoped.** Walking the entire home directory times out at the 120s limit. Scope `find` to a known project path, or prefer `ls --recursive` which respects tool limits. If you genuinely must search home, narrow by `-name` + `-maxdepth` and redirect stderr (`2>/dev/null`).
+- **Never call `glob` with `base_dir=/`, `base_dir=~`, `base_dir=~/Desktop`, or any other broad root.** Scanning a wide tree times out at 30s. Always pass the specific project directory (e.g. `~/Desktop/myproject`). For exploratory scans, use `ls` + `bash find` with `-maxdepth 3` instead.
 
 
 

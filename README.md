@@ -18,4 +18,6 @@ bb backup:restore --apply  # explicit restore
 
 ## GitHub push policy
 
-This workspace prepares a local sanitized git repo. Pushing to GitHub is intentionally not automated without explicit approval.
+This workspace prepares a local sanitized Git repository. `backup:push` and the final step of `backup:sync` still perform a real remote push, so run them only with explicit approval.
+
+`backup:sync` composes the local `backup/push.bb` task in-process rather than spawning a bare `bb` child. That remains valid in stripped cron PATHs while preserving every scan and remote/branch safety gate.

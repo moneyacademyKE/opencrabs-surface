@@ -8,7 +8,7 @@
 (when-not (.exists (io/file root ".git"))
   @(babashka.process/process ["git" "init"] {:dir root :out :inherit :err :inherit}))
 
-@(babashka.process/process ["git" "add" "README.md" "manifest.edn" "bb.edn" ".gitignore" "backup" "snapshot" "reports"] {:dir root :out :inherit :err :inherit})
+@(babashka.process/process ["git" "add" "README.md" "manifest.edn" "bb.edn" ".gitignore" "backup" "snapshot" "reports" "OPERATIONAL_POLICY.md"] {:dir root :out :inherit :err :inherit})
 
 (def status (:out @(babashka.process/process ["git" "status" "--short"] {:dir root :out :string :err :string})))
 (if (str/blank? status)
@@ -17,6 +17,5 @@
     @(babashka.process/process ["git" "commit" "-m" msg] {:dir root :out :inherit :err :inherit})
     (println "Committed sanitized backup snapshot.")))
 
-(let [result @(babashka.process/process ["bb" "backup:push"] {:dir root :out :inherit :err :inherit})]
-  (when-not (zero? (:exit result))
-    (System/exit (:exit result))))
+(binding [*command-line-args* []]
+  (load-file "backup/push.bb"))

@@ -108,33 +108,22 @@ Audio: all output OGG/Opus via ffmpeg. Models: whisper in `~/.local/share/opencr
 Repeated avoidable failures logged against specific tools — apply proactively:
 
 - **`session_search` supports ONLY operations 'list' and 'search'.** There is NO 'recent' operation on `session_search` — that belongs to `channel_search` (operations: 'list_chats', 'recent', 'search'). Calling `session_search` with operation='recent' fails every time with "Unknown operation 'recent'. Use 'list' or 'search'." This is the single most common avoidable failure in the ledger (100+ repeats, almost all from cron auto-resume loops). Correct usage: operation='list' to enumerate sessions, operation='search' with a **non-empty `query`** substring to find messages. Never pass an empty/missing query to 'search' ("Query cannot be empty"). To read a specific session's tail, list first, then search with a distinctive term from that session's title.
-- **`read_file` fails on non-UTF8 / binary files** with "I/O error: stream did not contain valid UTF-8" (seen on `.edn` log/event files, `.marker`, `.axiom-*` artifacts). Before reading an unknown artifact, check its type with `bash` (`file <path>`, or `head -c 200 <path> | cat -v`). Parse binary logs with `bash` tools (`grep`/`strings`/`od`), not `read_file`.
+- **`read_file` fails on non-UTF8 / binary files** with "I/O error: stream did not contain valid UTF-8" (seen on `.edn` log/event files, `.marker`, `.axiom-*` artifacts). Before reading an unknown artifact, check its type with `bash` (`file <path>`, or `head -c 200 <path> | cat -v`). Parse binary logs with `bash` tools (`grep`/`strings`/`od`), not `read_file`. Recovery pattern: `bash: file <path>` → if not ASCII/UTF-8 → `strings <path> | head -50`.
+- **`opencrabs_sqlite_query` is read-only (SELECT/WITH only).** Attempting INSERT, UPDATE, DELETE, or PRAGMA writes always fails with `Only SELECT/WITH queries are allowed`. For any write operation, use `bash` with `sqlite3 ~/.opencrabs/opencrabs.db "INSERT ..."` directly.
 
 ## RSI Lazy-Tool Recovery
 
 When an autonomous RSI/self-improvement prompt says tools like `feedback_analyze`, `feedback_record`, `self_improve`, or `rsi_propose` are unavailable, do **not** conclude they are absent until you call `tool_search("feedback analyze self improvement rsi propose")`. In lazy-tool sessions these tools are commonly hidden at first; activating them turns a fake refusal loop into real work.
 
-## Cron Auto-Resume Tail Recovery
+## Cron Auto-Resume & Recovery Discipline
 
-When a cron auto-resume prompt asks for the last ~10 messages, remember `session_search` cannot do tail reads: it only supports `list` and `search`, and `search` requires a non-empty substring. Do this instead:
-
-1. `session_search(operation="list")` to identify candidates.
-2. Prefer the newest non-`Cron` work session unless the cron session itself is the real target.
-3. Search that session with distinctive terms from its title or expected task (`"Phase"`, `"Task"`, `"pending"`, project name).
-4. If exact tail context is still required and tools cannot provide it, use a read-only `sqlite3 ~/.opencrabs/opencrabs.db` query as a last resort; do not write to the DB.
-
-Never retry `session_search` with `operation="recent"`, an empty query, or whitespace-only query — that is pure failure spam.
-
-## Cron/Bash Tool Recovery Notes
-
-- **Cron auto-resume:** `session_search` cannot return the last N messages directly and `search` requires a non-empty query. After `session_search(operation="list")`, prefer the newest non-`Cron` work session, search it with distinctive terms, and if true tail context is needed use a read-only `sqlite3 ~/.opencrabs/opencrabs.db` query against `messages`/`sessions` as the last-resort inspection path.
-- **Bash working directories:** do not set `working_dir` to `~` or `""`; the tool validates it literally and fails before the shell can expand it. Use `working_dir: "/"` or omit it, then `cd ~/path` inside the command when shell expansion is needed.
-
-## Cron Auto-Resume Exact-Session Rule
-
-When resuming a non-cron session from a cron heartbeat, avoid searching `session="all"` with a generic title token like `RSI` after listing sessions: the search can match the current Cron session because prior tool outputs echo that title. Use the exact target session selector (`session="RSI autonomous cycle"`, `session="Axiom Phase 5-8 Completion"`, etc.) plus a non-empty distinctive query from the task text. If that still does not surface the actual last messages, use the documented read-only DB fallback rather than retrying broad searches.
-
-For bash checks in cron, omit `working_directory` entirely or set it to `/`; never pass `~` or an empty string. Put `cd ~/project` inside the command so the shell expands it. Avoid `bb - <<'CLJ'` heredocs in this harness because the bare-REPL guard may misclassify them; use `bb -e`, `node -e`, or write a small script file and run it.
+When a cron auto-resume prompt asks for the last ~10 messages:
+1. Call `session_search(operation="list")` to enumerate sessions.
+2. Select the target session using exact session selector (`session="<exact_title>"`), avoiding broad `session="all"` searches.
+3. Search with a distinctive non-empty query string from the task text (e.g. `"Phase"`, `"Task"`, `"pending"`).
+4. If exact tail context is required and `session_search` cannot surface it, execute a read-only SQLite query (`SELECT * FROM messages WHERE session_id = '...' ORDER BY created_at DESC LIMIT 10;`) using `opencrabs_sqlite_query` or `bash`.
+5. **Bash working directory rule**: Omit `working_directory` or set to `/` — never pass `~` or `""`. Use `cd ~/project` inside the command string.
+6. **Termination rule**: If after 3 `session_search` attempts the target session cannot be located, stop searching — log the failed recovery to `feedback_ledger` (`event_type='tool_failure'`, `dimension='session_search'`) and exit cleanly. Never loop indefinitely.
 
 ## Built-in Tool Failure Triage
 
@@ -189,3 +178,10 @@ A provider/model that **cannot emit structured `tool_use` blocks** — it narrat
 
 1. **Common Schema Mistakes to Self-Check**: Before retrying a failed tool call, check if you made one of these 4 common mistakes: (1) sent `null` for an optional field instead of omitting it, (2) sent a JSON array as a string (`"[\"a\"]"` instead of `["a"]`), (3) wrapped a single argument in `{}` where the schema expected an array, (4) passed a bare string where an array was expected. Fix the shape, don't just retry.
 2. **Transparent Defaults**: When a tool requires coupled fields and you supply a default for a missing one (e.g. `limit=2000` when only `offset` was given), state the default in your response so the user can correct it.
+3. **Config Manager Discovery Preflight**: Before any `config_manager` `action=get` or `action=set` call — including within complex multi-tool sessions — first call `action=list_keys` (or read `~/.opencrabs/config.toml` directly via `bash`) to confirm the section path and key name exist. Never assume a key name from memory; the TOML schema is ground truth.
+4. **File Creation Directory Preflight**: Set `create_dirs: true` when invoking `write_file` on paths where parent directories may not exist.
+
+
+## Evidence-First Tool Economy
+
+**Minimize redundant calls, never independent evidence.** Classify every call as discovery, decision, mutation, or proof; skip it only when a fresh receipt already answers it. Batch independent read-only work, but keep dependencies sequential. Recheck immediately before each mutation and verify it once with targeted proof. Invalidate receipts after writes or relevant git/config/external changes; always retain full gates for releases, security, and irreversible actions.

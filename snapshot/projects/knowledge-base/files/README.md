@@ -26,12 +26,14 @@ SQLite + FTS5
 
 ```bash
 cd ~/.opencrabs/projects/knowledge-base/files
-bb kb:doctor
-bb kb:stats
-bb kb:search --mode snippets "query"
-bb kb:ingest github
-bb kb:ingest youtube --handle @channel --max 30
+/opt/homebrew/bin/bb kb:doctor
+/opt/homebrew/bin/bb kb:stats
+/opt/homebrew/bin/bb kb:search --mode snippets "query"
+/opt/homebrew/bin/bb kb:ingest github
+/opt/homebrew/bin/bb kb:ingest youtube --handle @channel --max 30
 ```
+
+The explicit Babashka executable avoids relying on an ambient PATH, which may be intentionally stripped in automated contexts.
 
 ## Active sources
 
