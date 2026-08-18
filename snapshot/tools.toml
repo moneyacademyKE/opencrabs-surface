@@ -5,7 +5,11 @@ executor = "shell"
 enabled = true
 requires_approval = false
 timeout_secs = 30
-command = "sqlite3 -json /Users/moe/.opencrabs/opencrabs.db '{{sql}}'"
+command = '''
+python3 -c 'import os,sqlite3,sys,json,re; sql=sys.argv[1].strip(); low=sql.lower(); forbidden=re.compile(r"\b(insert|update|delete|drop|alter|create|replace|vacuum|attach|detach|pragma|reindex)\b");
+if not (low.startswith("select ") or low.startswith("with ")): raise SystemExit("Only SELECT/WITH queries are allowed");
+if forbidden.search(low): raise SystemExit("Rejected non-read-only SQL");
+con=sqlite3.connect(os.path.expanduser("~/.opencrabs/opencrabs.db")); con.row_factory=sqlite3.Row; rows=[dict(r) for r in con.execute(sql).fetchall()]; print(json.dumps(rows, ensure_ascii=False, indent=2))' '{{sql}}''''
 
 [tools.headers]
 
@@ -42,93 +46,931 @@ params = []
 [tools.headers]
 
 [[tools]]
-name = "docker_logs"
-description = "Get Docker container logs"
+name = "bankai_doctor"
+description = "Read-only Bankai health and integration status from the stable ~/bankai checkout."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = "cd /Users/moe/bankai && /Users/moe/.local/bin/bankai doctor"
+params = []
+
+[tools.headers]
+
+[[tools]]
+name = "bankai_ready"
+description = "List unblocked Bankai tasks read-only from the stable ~/bankai checkout."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = "cd /Users/moe/bankai && /Users/moe/.local/bin/bankai ready"
+params = []
+
+[tools.headers]
+
+[[tools]]
+name = "bankai_list"
+description = "List current Bankai tasks read-only from the stable ~/bankai checkout."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = "cd /Users/moe/bankai && /Users/moe/.local/bin/bankai list"
+params = []
+
+[tools.headers]
+
+[[tools]]
+name = "bankai_prime"
+description = "Retrieve Bankai task-memory context read-only for a supplied topic from ~/bankai."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = "cd /Users/moe/bankai && /Users/moe/.local/bin/bankai prime --query '{{query}}'"
+
+[tools.headers]
+
+[[tools.params]]
+name = "query"
+type = "string"
+description = "Topic to retrieve from Bankai memory"
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_setup_check"
+description = "Check Bankai agent setup markers read-only from the stable ~/bankai checkout."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = "cd /Users/moe/bankai && /Users/moe/.local/bin/bankai setup check"
+params = []
+
+[tools.headers]
+
+[[tools]]
+name = "bankai_create_task"
+description = "Create one Bankai task in ~/bankai. This is a write operation and requires approval. Only the task title is accepted; labels, priority, parent, and kind remain available through the Bankai CLI until separately wrapped."
 executor = "shell"
 enabled = true
 requires_approval = true
 timeout_secs = 30
-command = "docker logs {{container}}"
-params = []
+command = "cd /Users/moe/bankai && /Users/moe/.local/bin/bankai create '{{title}}'"
 
 [tools.headers]
 
+[[tools.params]]
+name = "title"
+type = "string"
+description = "Task title; plain text, no shell syntax"
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
 [[tools]]
-name = "kb_doctor"
-description = "Run the OpenCrabs knowledge-base doctor and return safe status JSON."
+name = "bankai_update_task"
+description = "Set a Bankai task status in ~/bankai. Write operation requiring approval. Allowed statuses are open, in_progress, blocked, completed, and closed."
 executor = "shell"
 enabled = true
-requires_approval = false
+requires_approval = true
 timeout_secs = 30
-command = "cd ~/.opencrabs/projects/knowledge-base/files && ../bin/kb doctor --json"
-params = []
+command = "cd /Users/moe/bankai && /Users/moe/.local/bin/bankai update '{{task_id}}' '{{status}}'"
 
 [tools.headers]
 
+[[tools.params]]
+name = "task_id"
+type = "string"
+description = "Bankai task ID such as bk-a3f8"
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "status"
+type = "string"
+description = "New status: open, in_progress, blocked, completed, or closed"
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
 [[tools]]
-name = "kb_stats"
-description = "Return OpenCrabs knowledge-base source counts and recent ingest run status as JSON."
+name = "bankai_claim_task"
+description = "Atomically claim a ready Bankai task in ~/bankai. Write operation requiring approval."
 executor = "shell"
 enabled = true
-requires_approval = false
+requires_approval = true
 timeout_secs = 30
-command = "cd ~/.opencrabs/projects/knowledge-base/files && ../bin/kb stats --json"
-params = []
+command = "cd /Users/moe/bankai && /Users/moe/.local/bin/bankai update '{{task_id}}' --claim '{{assignee}}'"
 
 [tools.headers]
 
+[[tools.params]]
+name = "task_id"
+type = "string"
+description = "Bankai task ID such as bk-a3f8"
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "assignee"
+type = "string"
+description = "Stable agent or worker identity to record as assignee"
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
 [[tools]]
-name = "kb_search"
-description = "Search the OpenCrabs knowledge base with policy-aware output modes. Use mode=titles or snippets by default; full content requires private=true."
+name = "bankai_add_dependency"
+description = "Add one typed Bankai task relation in ~/bankai. Write operation requiring approval; use relation_type=blocks for a blocking dependency."
+executor = "shell"
+enabled = true
+requires_approval = true
+timeout_secs = 30
+command = "cd /Users/moe/bankai && /Users/moe/.local/bin/bankai dep add '{{task_id}}' '{{target_id}}' --type '{{relation_type}}'"
+
+[tools.headers]
+
+[[tools.params]]
+name = "task_id"
+type = "string"
+description = "Task ID that receives the relation"
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "target_id"
+type = "string"
+description = "Target task ID related to task_id"
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "relation_type"
+type = "string"
+description = "Relation type; blocks is the safe default"
+required = false
+default = "blocks"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_remember"
+description = "Record one durable Bankai project memory in ~/bankai. Write operation requiring approval; do not include secrets or credentials."
+executor = "shell"
+enabled = true
+requires_approval = true
+timeout_secs = 30
+command = "cd /Users/moe/bankai && /Users/moe/.local/bin/bankai remember '{{text}}'"
+
+[tools.headers]
+
+[[tools.params]]
+name = "text"
+type = "string"
+description = "Durable project insight, decision, or constraint; do not include secrets"
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_setup_check"
+description = "Check Bankai/OpenCrabs setup markers for any absolute repository path without modifying it."
 executor = "shell"
 enabled = true
 requires_approval = false
+method = ""
+url = ""
 timeout_secs = 30
-command = "cd ~/.opencrabs/projects/knowledge-base/files && ../bin/kb search --json --mode '{{mode}}' {{private_flag}} '{{query}}'"
+command = """repo="{{repo_path}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai setup check"""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path to inspect; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_prime"
+description = "Retrieve Bankai project context for any absolute repository path. Uses Bankai's verified retrieval path and reports its backend in the returned prompt."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = """repo="{{repo_path}}"; query="{{query}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai prime --query "$query""""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path to query; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "query"
+type = "string"
+description = "Project topic to retrieve."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_search"
+description = "Search Bankai tasks and project memories for any absolute repository path using the daemon-owned retrieval surface."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = """repo="{{repo_path}}"; query="{{query}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai search "$query""""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path to search; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "query"
+type = "string"
+description = "Task or memory search query."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_list"
+description = "List Bankai task heads for any absolute repository path without modifying it."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = """repo="{{repo_path}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai list"""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path to inspect; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_doctor"
+description = "Read Bankai health for any absolute repository path without modifying it."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = """repo="{{repo_path}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai doctor"""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path to inspect; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_create_task"
+description = "Create one Bankai task in any bound absolute repository path. Approval-gated and limited to the Bankai create command."
+executor = "shell"
+enabled = true
+requires_approval = true
+method = ""
+url = ""
+timeout_secs = 30
+command = """repo="{{repo_path}}"; title="{{title}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai create "$title""""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "title"
+type = "string"
+description = "Plain-text task title; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_ready"
+description = "List unblocked Bankai work for any absolute repository path without modifying it."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = """repo="{{repo_path}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai ready"""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path to inspect; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_update_task"
+description = "Set an allowed Bankai task status in any bound absolute repository path. Approval-gated and validated."
+executor = "shell"
+enabled = true
+requires_approval = true
+method = ""
+url = ""
+timeout_secs = 30
+command = """repo="{{repo_path}}"; task_id="{{task_id}}"; status="{{status}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; case "$status" in open|in_progress|blocked|completed|closed) ;; *) echo '{"error":"status must be open, in_progress, blocked, completed, or closed"}' >&2; exit 2;; esac; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai update "$task_id" "$status""""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "task_id"
+type = "string"
+description = "Bankai task ID such as bk-a3f8."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "status"
+type = "string"
+description = "Allowed status: open, in_progress, blocked, completed, or closed."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_add_dependency"
+description = "Add a validated typed Bankai dependency in any bound absolute repository path. Approval-gated; defaults to blocks."
+executor = "shell"
+enabled = true
+requires_approval = true
+method = ""
+url = ""
+timeout_secs = 30
+command = """repo="{{repo_path}}"; task_id="{{task_id}}"; target_id="{{target_id}}"; relation_type="{{relation_type}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; case "$relation_type" in blocks|parent_child|duplicates|related|supersedes) ;; *) echo '{"error":"unsupported relation_type"}' >&2; exit 2;; esac; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai dep add "$task_id" "$target_id" --type "$relation_type""""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "task_id"
+type = "string"
+description = "Task ID receiving the relation."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "target_id"
+type = "string"
+description = "Target task ID."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "relation_type"
+type = "string"
+description = "Validated relation type; blocks is the safe default."
+required = false
+default = "blocks"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_claim_task"
+description = "Atomically claim ready Bankai work in any bound absolute repository path. Approval-gated; no arbitrary shell."
+executor = "shell"
+enabled = true
+requires_approval = true
+method = ""
+url = ""
+timeout_secs = 30
+command = """repo="{{repo_path}}"; task_id="{{task_id}}"; assignee="{{assignee}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai update "$task_id" --claim "$assignee""""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "task_id"
+type = "string"
+description = "Bankai task ID such as bk-a3f8."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "assignee"
+type = "string"
+description = "Stable agent or worker identity."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_remember"
+description = "Record one durable Bankai project memory in any bound absolute repository path. Approval-gated; never include secrets."
+executor = "shell"
+enabled = true
+requires_approval = true
+method = ""
+url = ""
+timeout_secs = 30
+command = """repo="{{repo_path}}"; text="{{text}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai remember "$text""""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "text"
+type = "string"
+description = "Durable project insight; do not include credentials or secrets."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_serve"
+description = "Start and verify a local Bankai daemon for any initialized absolute repository path. Approval-gated; Unix-socket local only, no network listener."
+executor = "shell"
+enabled = true
+requires_approval = true
+method = ""
+url = ""
+timeout_secs = 30
+command = '''set -eu; repo="{{repo_path}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo/.bankai" || { echo '{"error":"repository is not Bankai-initialized; bind it first"}' >&2; exit 2; }; cd "$repo" || exit 2; if [ -S .bankai/bankai.sock ]; then /Users/moe/.local/bin/bankai doctor; else nohup /Users/moe/.local/bin/bankai serve > .bankai/serve.log 2> .bankai/serve.err.log < /dev/null & pid=$!; sleep 1; printf '{"started_pid":%s}\n' "$pid"; /Users/moe/.local/bin/bankai doctor; fi'''
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute initialized repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_health"
+description = "Read Bankai daemon health for an initialized absolute repository path. No writes or network access."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = """set -eu; repo="{{repo_path}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo/.bankai" || { echo '{"error":"repository is not Bankai-initialized; bind it first"}' >&2; exit 2; }; cd "$repo" || exit 2; /Users/moe/.local/bin/bankai doctor"""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute initialized repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_retrieve"
+description = "Retrieve verified Bankai context for any bound repository: prefer prime, label the actual lexical backend, and fall back to text search with explicit provenance if prime is unavailable."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = '''set -eu; repo="{{repo_path}}"; query="{{query}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo/.bankai" || { echo '{"error":"repository is not Bankai-initialized; bind it first"}' >&2; exit 2; }; cd "$repo" || exit 2; prime=$(/Users/moe/.local/bin/bankai prime --query "$query"); if printf '%s' "$prime" | jq -e '.ok' >/dev/null 2>&1; then printf '%s\n' "$prime" | jq --arg backend 'term-hash (lexical)' --arg guarantee 'lexical overlap; not synonym-aware semantic embeddings' '{"backend":$backend,"guarantee":$guarantee,"source":"prime","result":.ok}'; else search=$(/Users/moe/.local/bin/bankai search "$query"); if printf '%s' "$search" | jq -e '.ok' >/dev/null 2>&1; then printf '%s\n' "$search" | jq --arg backend 'BM25/text projection' --arg guarantee 'text-ranked fallback; no semantic guarantee' '{"backend":$backend,"guarantee":$guarantee,"source":"search-fallback","result":.ok}'; else printf '%s\n' "$prime" | jq --arg fallback "$search" '{"backend":"unavailable","guarantee":"no retrieval result","prime":.error,"search":($fallback|fromjson? // $fallback)}'; fi; fi'''
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute initialized repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "query"
+type = "string"
+description = "Project topic to retrieve."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_integration_report"
+description = "Return one verified Bankai/OpenCrabs integration report with health, setup, and retrieval provenance. Read-only."
+executor = "shell"
+enabled = true
+requires_approval = false
+method = ""
+url = ""
+timeout_secs = 30
+command = """set -eu; cd /Users/moe/bankai; health=$(/Users/moe/.local/bin/bankai doctor); check=$(/Users/moe/.local/bin/bankai setup check); prime=$(/Users/moe/.local/bin/bankai prime --query '{{query}}'); jq -n --argjson health "$health" --argjson setup "$check" --argjson prime "$prime" '{health:$health,setup:$setup,retrieval:{backend:"term-hash (lexical)",semantic_embeddings:false,vector_index:$health.ok.projection.vector_index,result:$prime.ok}}'"""
 
 [tools.headers]
 
 [[tools.params]]
 name = "query"
 type = "string"
-description = "Search query"
+description = "Retrieval topic to verify."
 required = true
-coerce_empty_to = "reject"
-coerce_null_to = "reject"
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_bind_repository"
+description = "Initialize Bankai and inject its managed OpenCrabs marker into the repository root without overwriting unmanaged directive content. Approval-gated and idempotent."
+executor = "shell"
+enabled = true
+requires_approval = true
+method = ""
+url = ""
+timeout_secs = 30
+command = '''set -eu; repo="{{repo_path}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; init=$(/Users/moe/.local/bin/bankai init); setup=$(/Users/moe/.local/bin/bankai setup opencrabs); if [ -f .bankai/.opencrabs.md ]; then if [ ! -e .opencrabs.md ]; then cp .bankai/.opencrabs.md .opencrabs.md; elif ! grep -q 'BANKAI_INSTRUCTIONS_START' .opencrabs.md; then printf '\n\n' >> .opencrabs.md; cat .bankai/.opencrabs.md >> .opencrabs.md; fi; fi; check=$(/Users/moe/.local/bin/bankai setup check); root_marker=false; if [ -f .opencrabs.md ] && grep -q 'BANKAI_INSTRUCTIONS_START' .opencrabs.md; then root_marker=true; fi; printf '%s\n' "$init" "$setup"; printf '%s\n' "$check" | jq --argjson root_marker "$root_marker" '. + {opencrabs_root_directive:$root_marker}''''
+
+[tools.headers]
 
 [[tools.params]]
-name = "mode"
+name = "repo_path"
 type = "string"
-description = "Output mode: titles, snippets, or full"
+description = "Absolute repository path to initialize and bind; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_plan_task_start"
+description = "Idempotently bind an OpenCrabs plan task to a Bankai task by exact marker match, then claim it only if open. Approval-gated; fixed CLI workflow only."
+executor = "shell"
+enabled = true
+requires_approval = true
+timeout_secs = 30
+command = """set -eu; repo="{{repo_path}}"; marker="[opencrabs:{{session_id}}:{{plan_task_id}}]"; title="{{title}}"; assignee="{{assignee}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; h=$(/Users/moe/.local/bin/bankai doctor); printf '%s' "$h" | jq -e '.ok.healthy == true' >/dev/null 2>&1 || { echo '{"error":"bankai daemon not healthy for this repository; run bankai serve first"}' >&2; exit 3; }; listing=$(/Users/moe/.local/bin/bankai list); total=$(printf '%s' "$listing" | jq -r '.ok.total // 0'); returned=$(printf '%s' "$listing" | jq -r '.ok.returned // 0'); if [ "$total" != "$returned" ]; then echo '{"error":"task list truncated; cannot safely resolve marker"}' >&2; exit 1; fi; row=$(printf '%s' "$listing" | jq -c --arg m "$marker" '[.ok.tasks[] | select((.title // "") | contains($m))] | sort_by(.updated_at) | reverse | .[0] // empty'); if [ -n "$row" ]; then id=$(printf '%s' "$row" | jq -r '.id'); status=$(printf '%s' "$row" | jq -r '.status'); case "$status" in open) /Users/moe/.local/bin/bankai update "$id" --claim "$assignee" ;; *) printf '%s' "$row" | jq -c --arg s "$status" '{ok: ., note: ("resolved existing task in status " + $s + "; no claim attempted")}'; ;; esac; else row=$(/Users/moe/.local/bin/bankai create "$marker $title" | jq -c '.ok'); id=$(printf '%s' "$row" | jq -r '.id'); test -n "$id" && test "$id" != "null" || { echo '{"error":"Bankai did not return a task id"}' >&2; exit 1; }; /Users/moe/.local/bin/bankai update "$id" --claim "$assignee"; fi; wire=$(/Users/moe/.opencrabs/scripts/bankai_wire_deps.sh "$repo" "{{session_id}}" "$id" "{{depends_on}}" 2>&1 || true); printf '%s\n' "$wire""""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute bound repository path; no shell syntax."
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "session_id"
+type = "string"
+description = "OpenCrabs session UUID or stable session identifier."
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "plan_task_id"
+type = "string"
+description = "OpenCrabs plan task UUID or stable task identifier."
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "title"
+type = "string"
+description = "Plain-text task title."
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "assignee"
+type = "string"
+description = "Stable Bankai assignee identity."
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "depends_on"
+type = "string"
+description = "Comma-separated OpenCrabs plan task ids this task depends on (must complete first); wired as blocking Bankai edges at bind time."
 required = false
-default = "snippets"
-coerce_empty_to = "default"
-coerce_null_to = "default"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_plan_task_complete"
+description = "Complete or update the Bankai task linked to an OpenCrabs plan task, with explicit missing-task and idempotent-status handling. Approval-gated and status-validated."
+executor = "shell"
+enabled = true
+requires_approval = true
+timeout_secs = 30
+command = '''set -eu; repo="{{repo_path}}"; task_id="{{bankai_task_id}}"; status="{{status}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; case "$status" in completed|blocked|open|in_progress|closed) ;; *) echo '{"error":"status must be open, in_progress, blocked, completed, or closed"}' >&2; exit 2;; esac; cd "$repo" || exit 2; h=$(/Users/moe/.local/bin/bankai doctor); printf '%s' "$h" | jq -e '.ok.healthy == true' >/dev/null 2>&1 || { echo '{"error":"bankai daemon not healthy for this repository; run bankai serve first"}' >&2; exit 3; }; listing=$(/Users/moe/.local/bin/bankai list); total=$(printf '%s' "$listing" | jq -r '.ok.total // 0'); returned=$(printf '%s' "$listing" | jq -r '.ok.returned // 0'); if [ "$total" != "$returned" ]; then echo '{"error":"task list truncated; cannot safely resolve task id"}' >&2; exit 1; fi; row=$(printf '%s' "$listing" | jq -c --arg i "$task_id" '[.ok.tasks[] | select(.id == $i)] | .[0] // empty'); if [ -z "$row" ]; then printf '{"error":"task not found: %s"}\n' "$task_id" >&2; exit 1; fi; cur=$(printf '%s' "$row" | jq -r '.status'); if [ "$cur" = "$status" ]; then printf '%s' "$row" | jq -c '{ok: ., note: "already in requested status; no write performed"}'; else /Users/moe/.local/bin/bankai update "$task_id" "$status"; fi'''
+
+[tools.headers]
 
 [[tools.params]]
-name = "private_flag"
+name = "repo_path"
 type = "string"
-description = "Pass --private only when full raw content is approved/private; otherwise leave empty"
+description = "Absolute bound repository path; no shell syntax."
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "bankai_task_id"
+type = "string"
+description = "Persisted Bankai task ID from bankai_plan_task_start."
+required = true
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "status"
+type = "string"
+description = "Use completed for success, blocked for failure, or another allowed status."
+required = false
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_create_task_full"
+description = "Create one Bankai task or wisp in a bound absolute repository path with optional labels, kind, priority, parent, TTL. Approval-gated; Bankai create command only."
+executor = "shell"
+enabled = true
+requires_approval = true
+timeout_secs = 30
+command = """repo="{{repo_path}}"; ttl="{{ttl}}"; kind="{{kind}}"; priority="{{priority}}"; parent="{{parent}}"; labels="{{labels}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; health=$(/Users/moe/.local/bin/bankai doctor 2>/dev/null || true); echo "$health" | jq -e '.ok.healthy == true' >/dev/null 2>&1 || { echo '{"error":"bankai daemon not healthy; run bankai serve first"}' >&2; exit 3; }; args=""; [ -n "$ttl" ] && args="$args --ttl $ttl"; [ -n "$kind" ] && args="$args --kind $kind"; [ -n "$priority" ] && args="$args --priority $priority"; [ -n "$parent" ] && args="$args --parent $parent"; [ -n "$labels" ] && for l in $(echo "$labels" | tr ',' ' '); do args="$args --label $l"; done; /Users/moe/.local/bin/bankai create "{{title}}" $args"""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "title"
+type = "string"
+description = "Plain-text title; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "labels"
+type = "string"
+description = "Optional comma-separated labels."
 required = false
 default = ""
-coerce_empty_to = "default"
-coerce_null_to = "default"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "kind"
+type = "string"
+description = "Optional kind: task|bug|feature|epic|decision|chore|gate|wisp."
+required = false
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "priority"
+type = "string"
+description = "Optional integer priority."
+required = false
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "parent"
+type = "string"
+description = "Optional parent task id for hierarchy."
+required = false
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "ttl"
+type = "string"
+description = "Optional TTL seconds (wisp)."
+required = false
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools]]
-name = "kb_ask"
-description = "Return citation candidates for a KB question; degrades cleanly when synthesis is unavailable."
+name = "bankai_repository_wisp_lifecycle"
+description = "Wisp lifecycle in a bound absolute repository path: promote to task, burn, archive, or digest/squash. Approval-gated; Bankai wisp command only, action validated against allowlist."
 executor = "shell"
 enabled = true
-requires_approval = false
+requires_approval = true
 timeout_secs = 30
-command = "cd ~/.opencrabs/projects/knowledge-base/files && /opt/homebrew/bin/bb kb:ask '{{query}}'"
+command = """repo="{{repo_path}}"; id="{{task_id}}"; action="{{action}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; health=$(/Users/moe/.local/bin/bankai doctor 2>/dev/null || true); echo "$health" | jq -e '.ok.healthy == true' >/dev/null 2>&1 || { echo '{"error":"bankai daemon not healthy; run bankai serve first"}' >&2; exit 3; }; case "$action" in promote|burn|archive|digest|squash) ;; *) echo '{"error":"action must be one of promote|burn|archive|digest|squash"}' >&2; exit 2;; esac; /Users/moe/.local/bin/bankai wisp "$action" "$id""""
 
 [tools.headers]
 
 [[tools.params]]
-name = "query"
+name = "repo_path"
 type = "string"
-description = "Question to retrieve citation candidates for"
+description = "Absolute repository path; no shell syntax."
 required = true
-coerce_empty_to = "reject"
-coerce_null_to = "reject"
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "task_id"
+type = "string"
+description = "Wisp id such as bk-a3f8."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "action"
+type = "string"
+description = "Lifecycle action: promote, burn, archive, digest, or squash."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_gate_resolve"
+description = "Resolve a Bankai gate (mark satisfied) in a bound absolute repository path. Approval-gated; Bankai gate resolve command only."
+executor = "shell"
+enabled = true
+requires_approval = true
+timeout_secs = 30
+command = """repo="{{repo_path}}"; id="{{gate_id}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; health=$(/Users/moe/.local/bin/bankai doctor 2>/dev/null || true); echo "$health" | jq -e '.ok.healthy == true' >/dev/null 2>&1 || { echo '{"error":"bankai daemon not healthy; run bankai serve first"}' >&2; exit 3; }; /Users/moe/.local/bin/bankai gate resolve "$id""""
+
+[tools.headers]
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "gate_id"
+type = "string"
+description = "Gate id such as bk-a3f8."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_repository_wisp_list"
+description = "List wisps in a bound absolute repository path, filtered by state (all, active, expired). Read-only; invalid state coerces to all."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 30
+command = """repo="{{repo_path}}"; state="{{state}}"; case "$repo" in /*) ;; *) echo '{"error":"repo_path must be absolute"}' >&2; exit 2;; esac; test -d "$repo" || { echo '{"error":"repo_path is not a directory"}' >&2; exit 2; }; cd "$repo" || exit 2; case "$state" in all|active|expired) ;; *) state="all";; esac; /Users/moe/.local/bin/bankai wisp list --state "$state""""
+
+[tools.headers]
+
+[[tools.params]]
+name = "state"
+type = "string"
+description = "Wisp state filter: all, active, or expired."
+required = false
+default = "all"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "repo_path"
+type = "string"
+description = "Absolute repository path; no shell syntax."
+required = true
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
