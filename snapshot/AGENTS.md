@@ -282,7 +282,9 @@ Respect existing repo lockfiles and package-manager markers. If `bun.lockb`/`bun
 
 When using `bash` for diagnostic output, never write `printf '--- heading ---\n'` directly. Some shell/builtin contexts can parse a leading `--` in the format position as an option and fail with `printf: --: invalid option`. Use `printf '%s\n' '--- heading ---'` or `echo '--- heading ---'` for headings. This is a tiny bug, but cron repeats tiny bugs like a woodpecker on espresso.
 
-## Bash macOS `timeout` Gotcha
+## Bash macOS BSD-Userland Gotchas (`timeout` + GNU-only flags)
+
+macOS BSD userland is **not GNU coreutils** — assume GNU-only syntax fails. Confirmed incidents: `timeout` (no binary, exit 127), `split --additional-suffix` (exit 64, 2026-08-21), `cat -A` (illegal option → use `cat -v`/`cat -e`/`od -c`). Before any non-trivial flag on `split`/`timeout`/textutils, use the BSD form or the `g`-prefixed coreutils binary (`brew install coreutils`).
 
 macOS ships **no `timeout` binary**. Inline/cron bash that does `timeout 110 bb ...` dies with exit 127 `sh: line 1: timeout: command not found` (seen 2026-07-28 16:50). To bound a command's runtime on macOS, use one of:
 - `gtimeout 110 bb ...` — requires `brew install coreutils` (`gtimeout`).
@@ -544,3 +546,7 @@ Before acting on failure-rate claims from transcripts, re-derive them from live 
 
 1. **Markdown Path Link Unwrapping**: If a `file not found` error occurs and the path contains Markdown link syntax (e.g. `[notes.md](http://notes.md)`), extract just the link text portion as the real filename and retry.
 2. **Relational Field Coercion over Error Bouncing**: When calling a tool with coupled fields and one is missing (e.g. `offset` without `limit`), supply the missing field with a sensible default (`offset=0`, `limit=2000`) rather than omitting the call. Note the default in your response so the user can correct if needed.
+
+## `write_file` Parent-Directory Gate
+
+**When `write_file` targets a path whose parent directory may not exist (new project/research/doc dirs), set `create_dirs: true` — or `mkdir -p` the parent first.** `create_dirs` defaults to false, so every write into a fresh directory dies with "Parent directory does not exist" (5 failures in 45 min on 2026-08-20: research/mzz, research/lad/L1+L2, src/docs). Writes to existing files need no flag. Violations: 5.

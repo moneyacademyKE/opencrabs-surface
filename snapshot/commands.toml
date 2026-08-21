@@ -135,3 +135,26 @@ name = "/backup-surface"
 description = "Back up the unique reusable OpenCrabs surface to a sanitized local git workspace with allowlist collection, scanning, local commits, restore support, and explicit approval before GitHub push."
 action = "prompt"
 prompt = "Use the installed OpenCrabs skill `backup-surface` from ~/.opencrabs/skills/backup-surface/SKILL.md. Follow that skill exactly to collect, scan, status, initialize, locally commit, restore, or prepare a GitHub push for the sanitized OpenCrabs surface backup. Treat trailing slash-command arguments as the requested backup operation. Never push to GitHub without explicit approval."
+
+[[commands]]
+name = "/userbot-login"
+description = "Collect MTProto creds (from args or conversationally) and drive the Telegram userbot login roundtrip (code → 2FA → verified session)."
+action = "prompt"
+prompt = """
+Run the Telegram userbot login flow end-to-end using the spike at ~/.opencrabs/projects/tg-userbot-spike (subcommands: login, whoami, watch). The binary reads creds itself from `[channels.telegram.userbot]` in keys.toml — never pass secrets on command lines.
+
+ARGS MODE — if the user invoked `/userbot-login <api_id> <api_hash> <phone>` (values in the trailing args): validate each by shape — api_id = pure digits, api_hash = exactly 32 hex chars, phone = starts with '+' followed by 10-15 digits. If a value fails its shape, name exactly which one is wrong and what's expected, ask them to re-send just that one, and STOP. If all three pass, write them via config_manager (section `channels.telegram.userbot`, keys api_id / api_hash / phone) and continue to the SESSION step. NEVER echo api_hash back in any reply or log. If this is a group chat and the hash arrived in args, add ONE brief note that it now lives in group history and can be rotated at my.telegram.org later — do not block.
+
+INTERACTIVE MODE — bare `/userbot-login` with no args:
+1. Preflight: `pgrep -f tg-userbot-spike` — if a login/watch process is already running, report its status instead of starting a second one.
+2. Read existing creds from keys.toml (grep for the section name only, never cat the file). Validate each present value by shape (as above).
+3. If everything is present and valid: say so in one line and continue to the SESSION step.
+4. If anything is missing or malformed: ASK for exactly the missing/invalid items in ONE message ("need: api_id, phone" style), tell the user they can either reply here or paste the TOML block into keys.toml themselves, and STOP — wait for their reply. Never proceed with partial creds.
+5. When the user replies with values (in any order), identify each by shape (digits = api_id, 32-hex = api_hash, +digits = phone), write via config_manager, confirm WHICH landed by name only, and continue.
+
+SESSION:
+6. If `userbot.session` exists in the spike dir, skip login — run `cargo run -- whoami`, report the account, done.
+7. Fresh login: from the spike dir run `cargo run -- login` in the background. It prints CODE_SENT and polls ./code.txt for up to 10 minutes.
+8. Tell the user Telegram is pushing a login code to their devices and to paste it here (digits only). When they paste it, write the digits into ~/.opencrabs/projects/tg-userbot-spike/code.txt.
+9. If the process prints PASSWORD_REQUIRED, ask for the 2FA password and write it to password.txt in the spike dir — never echo it. After AUTHORIZED, delete code.txt and password.txt.
+10. Verify: run `cargo run -- whoami` — expect `AUTHORIZED as <name>`. Report success and remind the user that userbot.session grants full account access (treat like keys.toml)."""
