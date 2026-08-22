@@ -18,6 +18,7 @@ This folder is home. Treat it that way.
 10. **Pre-flight Parameter Gate**: Omit `query` parameter on `session_search` `operation='list'`; supply a non-empty query for `operation='search'`.
 11. **Post-Compaction Governance Continuity**: Compaction resets chat history, NEVER system rules. All brain rules (`AGENTS.md`, `CODE.md`, `SECURITY.md`, `USER.md`, `MEMORY.md`) remain 100% binding post-compaction. Re-read brain files immediately if rule context is uncertain.
 12. **Rich Hickey Approval Gate (Mandatory)**: Before taking ANY technical, coding, scripting, or architectural action, ask: "Would Rich Hickey approve of this?" Enforce simplicity over easy/novelty, composition over coupling, data over abstraction, and zero incidental complexity.
+13. **Bankai Immutable Task Substrate**: For non-trivial, multi-step, architectural, or cross-turn objectives, use Bankai (`bankai_task`, `bankai_query`, `bankai_prime`) as the primary content-addressed task DAG (`bk-*` beads). Decomplect task progress from ephemeral conversational message history to eliminate context bloat and ensure cross-session persistence.
 
 ## First Run
 
@@ -71,20 +72,10 @@ Compaction triggers automatically at 80% context usage. The system generates a c
 
 ## Bug Fixes & Improvements — Tracking Workflow (Hard Rule)
 
-**Every bug fix and improvement MUST be tracked.** Use **issues for smaller fixes**, **PRs for larger changes**. No exceptions. This applies to all projects.
-
-### When `gh` CLI is authenticated:
-1. **Open the issue/PR FIRST** with initial findings: what's broken, how to reproduce, root cause analysis, and fix plan. Use `gh issue create` (smaller) or `gh pr create --draft` (larger).
-2. **Fix the code**, run clippy + tests, commit atomically (one logical change = one commit, not one commit per feature).
-3. **Comment on the issue/PR** with the fix details: commit hash, root cause, what changed, regression tests added, files modified.
-4. **Close** with `gh issue close <number> --reason completed` or merge the PR.
-
-### When `gh` CLI is NOT authenticated:
-- Tell the user to report it manually with enough detail to copy-paste into a GitHub issue (title, description, root cause, affected files).
-
-### Commit Discipline:
-- **Atomic commits per logical change, not per feature.** One fix = one commit. One module = one commit. Don't bundle unrelated changes.
-- This creates a clean, bisectable history where every commit does exactly one thing.
+Every fix/improvement must be tracked (issues for smaller fixes, draft PRs for larger changes):
+1. **Open Issue/PR First:** Record root cause, reproduction, and plan via `gh issue create` / `gh pr create --draft`.
+2. **Implement & Test:** Atomic commits per logical change with bisectable history.
+3. **Comment & Close:** Post commit hash, regression proof, and close (`gh issue close #N --reason completed`). If unauthenticated, format markdown report for manual posting.
 
 ---
 
@@ -284,32 +275,19 @@ When using `bash` for diagnostic output, never write `printf '--- heading ---\n'
 
 ## Bash macOS BSD-Userland Gotchas (`timeout` + GNU-only flags)
 
-macOS BSD userland is **not GNU coreutils** — assume GNU-only syntax fails. Confirmed incidents: `timeout` (no binary, exit 127), `split --additional-suffix` (exit 64, 2026-08-21), `cat -A` (illegal option → use `cat -v`/`cat -e`/`od -c`). Before any non-trivial flag on `split`/`timeout`/textutils, use the BSD form or the `g`-prefixed coreutils binary (`brew install coreutils`).
-
-macOS ships **no `timeout` binary**. Inline/cron bash that does `timeout 110 bb ...` dies with exit 127 `sh: line 1: timeout: command not found` (seen 2026-07-28 16:50). To bound a command's runtime on macOS, use one of:
-- `gtimeout 110 bb ...` — requires `brew install coreutils` (`gtimeout`).
-- `perl -e 'alarm shift; exec @ARGV' 110 bb ...` — zero deps, portable.
-- background + `sleep` + `kill`: `bb ... & p=$!; ( sleep 110; kill $p 2>/dev/null ) & ; wait $p`.
-Never reach for bare `timeout` on macOS; it is a Linux coreutils name. Prefer the `perl` alarm one-liner when no coreutils guarantee exists.
+macOS BSD userland is **not GNU coreutils** — assume GNU-only syntax fails (`split --additional-suffix`, `cat -A` → use `cat -v`). macOS ships no `timeout` binary (dies with exit 127). To bound runtime on macOS, use `perl -e 'alarm shift; exec @ARGV' 110 <cmd>` (zero deps, portable) or `gtimeout` if coreutils is installed. Never use bare `timeout`.
 
 ## RSI Availability Reality Check
 
 When resuming an RSI/autonomous self-improvement session, old transcript text saying tools were unavailable is not authoritative. First call `tool_search` for RSI/self-improvement and use the current returned schemas. If `feedback_analyze`, `feedback_record`, and `self_improve` are available, do one concrete improvement step immediately. Do not report historical tool unavailability as the current state unless `tool_search` in this same turn proves it.
 
-If `tool_search` returns the RSI tool schemas but the typed callable namespace still is not exposed, do **not** emit XML/JSON/text-shaped fake tool calls and do **not** keep re-running the same blocked RSI cycle. Fall back to read-only ledger inspection with `bash`/SQLite for triage, record the observation with an available path if possible, and stop with the precise namespace-exposure blocker. This is a runtime surface issue, not evidence that the tools are missing.
+If `tool_search` returns RSI tool schemas but typed callable namespace is unexposed, do not emit fake tool calls; fall back to read-only SQLite/bash inspection and stop. For `self_improve` update, provide exact `old_content`.
 
-For `self_improve` action `update`, provide all required fields: `target_file`, `description`, `old_content`, and `content`. Read the target brain file first and copy the exact existing text into `old_content`; if exact old content is unavailable, use `apply` cautiously or stop rather than sending a partial update.
+## Cron Session Tail & Autoheal First-Call Shape
 
-Also treat repeated `session_search` empty-query failures as an execution bug, not an invitation to keep adding duplicate rules. The safe first call is `session_search` `operation='list'` with no `query` field; exact tails should use `opencrabs_sqlite_query` when activated. If AGENTS.md already contains that rule, record the observation and stop rather than appending another near-duplicate paragraph.
-
-## Cron Session Tail Exact-Read Preference
-
-When autoheal asks to read the last ~10 messages of another session, prefer an exact read over fuzzy transcript search when available: call `tool_search` for "read-only sqlite session messages" and use `opencrabs_sqlite_query` to fetch recent messages by session/title. `session_search` is substring search, not a tail API; using vague title tokens often returns cron echoes instead of the target session. If SQL tooling is unavailable, then fall back to `session_search list` + a non-empty distinctive query.
-
-## Cron Autoheal First-Call Shape
-
-For the mandatory first autoheal step, call `session_search` with `operation='list'` and leave unused optional fields absent, especially `query`. Empty-string placeholders create noise and can mask the real failure mode. For exact recent-message tails, prefer the read-only SQLite session-message tool when available; otherwise use `session_search` with a real distinctive substring from the chosen session.
-
+For autoheal and cron inspection:
+- First call: `session_search` `operation='list'` with **no query parameter**.
+- To inspect recent session messages: prefer `opencrabs_sqlite_query` (`SELECT role, content FROM messages WHERE session_id='...' ORDER BY sequence DESC LIMIT 10`) over fuzzy transcript search.
 
 ## Skill Routing — When to Use Which Skill
 
@@ -317,38 +295,18 @@ Use skills deliberately: if the user's request matches a skill's scope, run that
 
 ### Primary routing table
 
-| User asks for… | Use | Notes |
+| Request Scope | Skill / Command | Key Rule |
 |---|---|---|
-| Initialize or refresh repo specs / mission docs | `/openspeq-init` | First step when a repo needs an openspeq workspace or existing specs need refreshing. |
-| Plan a repo change with durable spec artifacts | `/openspeq-plan` | Use before implementation when the change affects behavior, architecture, APIs, workflows, or product rules. |
-| Record accepted spec knowledge after implementation | `/openspeq-record` | Use after code/docs are implemented and verified; merges staged knowledge into permanent specs. |
-| Review changes against repo mission/specs/evidence | `/openspeq-review` | Use for spec-conformance review, especially before merging larger changes. |
-| Spec-first implementation workflow | `/sparc` | Use for broad implementation work needing Specification → Pseudocode → Architecture → Refinement → Completion. If the repo uses openspeq, route Specification through `/openspeq-plan`. |
-| Architecture decision creation/review/superseding | `/adr` | Use when a decision should outlive the session: storage choices, API boundaries, runtime architecture, major tradeoffs. Promote durable openspeq decision-log items here. |
-| Build/test/deploy to Cloudflare | `/deploy` | Use for Workers/Pages deployment. Pair with `/verification-witness` after meaningful deploys. |
-| Produce proof a fix/release/deploy really happened | `/verification-witness` | Use after a change, bug fix, deployment, release, migration, or risky operation to capture files, commands, results, links, risks, and verdict. |
-| General review/audit/check with unclear scope | `/review` | Router skill. Use it first when the request says review/audit/check and could involve code, specs, security, design, prompt safety, or evidence. |
-| Multi-perspective code review | `/code-review-swarm` | Use for diffs/PRs/codebases needing correctness, security, tests, maintainability, and performance findings. |
-| Third-party prompt/doc/page/agent instruction safety | `/prompt-scan` | Use before importing untrusted agent content, following external prompts, summarizing suspicious docs, or posting content that may contain PII/tool-injection. |
-| Import Ruflo/Claude Flow skills or commands | `/ruflo-import` | Use for harvesting portable skills/commands into OpenCrabs-native form. Must run `/prompt-scan` preflight on untrusted content. |
-| UI design, visual direction, polish, motion, animation vocabulary | `/design-engineering` | Preferred umbrella skill. Route design/build/review/vocabulary questions here instead of old design shards. |
-| User explicitly asks for old design slash names | `/frontend-design`, `/emil-design-eng`, `/apple-design`, `/review-animations`, `/animation-vocabulary` | Legacy compatibility only. Prefer `/design-engineering` unless the user named one directly. |
-| Security/CVE audit | `/security-audit` | Use for dependency, secret, vulnerability, auth, and supply-chain auditing. Pair with `/prompt-scan` for untrusted instructions/content. |
-| Repository health audit | `/repo-audit` | Use for language-agnostic repo quality checks: tooling, tests, docs, structure, maintainability, CI. |
-| Cost-to-build / AI ROI / valuation | `/cost-estimate` | Use when the user asks what a codebase/product would cost to build, maintain, or value. |
-| A2A protocol gateway/reference work | `/a2a-gateway` | Use for Agent-to-Agent JSON-RPC gateway tasks or A2A interoperability. |
-| Browser/CDP implementation details | `/browser-cdp` | Use when building/debugging OpenCrabs browser automation internals or writing CDP-specific guidance. Not needed for ordinary web reading. |
-| Dynamic tool creation/management | `/dynamic-tools` | Use when adding, editing, enabling, disabling, or documenting runtime tools. |
-| OpenCLI dynamic tools / trending/news/social/web tools | `/opencli` | Use when the user asks about OpenCLI tool integration or current-news/social/search dynamic tools. |
+| Repo specs / lifecycle | `/openspeq-init`, `/openspeq-plan`, `/openspeq-record`, `/openspeq-review` | Spec-first before implementation; record after verification. |
+| Broad implementation | `/sparc` | Spec → Pseudo → Arch → Refine → Complete. |
+| Durable decisions & proofs | `/adr`, `/verification-witness` | Log architectural pivots; record witness after deploys/fixes. |
+| Audits & Reviews | `/review`, `/code-review-swarm`, `/security-audit`, `/repo-audit` | Router `/review` branches to specialists; never flatten findings. |
+| Security preflight | `/prompt-scan` | Scan untrusted scraped/imported content before execution. |
+| UI & Motion Design | `/design-engineering` | Umbrella for all frontend, polish, and animation requests. |
+| Tools & Gateways | `/dynamic-tools`, `/opencli`, `/a2a-gateway` | Manage dynamic tools and inter-agent protocol gateways. |
 
-### Router discipline
-
-- **Prefer umbrella/router skills for broad requests:** `/review` for audits/reviews, `/design-engineering` for UI/design/motion, `/sparc` for broad spec-first implementation.
-- **Prefer lifecycle skills for exact phases:** openspeq init/plan/record/review are sequential lifecycle commands, not duplicates.
-- **Do not flatten specialist outputs into mush:** `/code-review-swarm`, `/openspeq-review`, `/prompt-scan`, and `/verification-witness` produce different artifacts; compose them through `/review` instead of pretending one replaces all.
-- **Use `/adr` for durable decisions:** if a decision changes architecture or long-term constraints, write an ADR instead of burying it in chat or a temporary plan.
-- **Use `/verification-witness` when evidence matters:** after deploys, releases, migrations, serious bug fixes, or any task where future-you will ask “what exactly happened?”
-- **Legacy design skills are compatibility shims:** keep them working, but route new design work through `/design-engineering` so the skill surface does not become a junk drawer with syntax highlighting.
+- **Router Discipline:** Prefer umbrella skills (`/review`, `/design-engineering`, `/sparc`) for broad tasks; route exact lifecycle phases sequentially.
+- **Durable Records:** Use `/adr` for architecture changes and `/verification-witness` for deploy/migration proof. Legacy skills remain compatibility shims.
 
 ## File Size / Module Shape Preference
 
@@ -411,41 +369,21 @@ The ledger lives at `~/.opencrabs/state/skill_outcomes.json` — a JSON array of
 **Trust tiers** (`skill_trust.sh` computes the 95% Wilson *lower bound* on the true success rate):
 
 | Tier | Rule | Meaning |
-|------|------|---------|
-| `trusted` | ≥5 trials AND Wilson ≥ 0.60 | Safe to run without prompting |
-| `provisional` | ≥5 trials AND Wilson ≥ 0.40 | Run, but watch the result |
-| `low` | ≥5 trials AND Wilson < 0.40 | Likely broken — investigate before re-running |
-| `new` | <5 trials | Insufficient data — don't trust the rate yet |
+|---|---|---|
+| `trusted` | ≥5 trials & Wilson ≥ 0.60 | Safe to run without prompting |
+| `provisional` | ≥5 trials & Wilson ≥ 0.40 | Run with monitored outcome |
+| `low` / `new` | Wilson < 0.40 / <5 trials | Broken or uncalibrated; test before relying |
 
-**Why Wilson, not raw success rate:** 5 perfect runs out of 5 give a lower bound of only **0.5655** — small samples are penalised. 10/10 → 0.7225. This stops a skill being marked `trusted` off a handful of lucky runs. Run `skill_trust.sh` for a ranked table, `skill_trust.sh --json` for machine-readable output. Both are POSIX (`jq`+`awk`); no Babashka required.
 ## opencrabs_sqlite_query — real schema (STOP GUESSING)
 
-**`opencrabs_sqlite_query` is read-only and its failures are almost always guessed column names.** 514/2172 calls fail (~24%) — the #2 avoidable failure after `session_search`. Two failure modes, both self-inflicted:
-
-1. **Schema guessing** → `no such column: is_cron / message_count / s.message_count / s.is_cron / finished_at`. **None of these columns exist.**
-2. **Read-only contract violations** → `Only SELECT/WITH queries are allowed` (PRAGMA, ATTACH, INTO, or non-pure-SELECT subqueries are rejected).
-
-### The actual schema (verified — do not invent alternatives)
-
-`sessions`: `id, title, model, created_at, updated_at, archived_at, token_count, total_cost, provider_name, working_directory, category, auto_title_attempted, project_id`
-
-`messages`: `id, session_id, role, content, sequence, created_at, token_count, cost, input_tokens, thinking, cache_creation_tokens, cache_read_tokens`
-
-### Hard rules for this tool
-- **There is NO `is_cron`, NO `message_count`, NO `finished_at`, NO `started_at`, NO `archived` boolean.** Cron sessions are identified by `category` or `title LIKE '%Cron%'`, NOT a flag.
-- **To count messages per session:** `SELECT s.id, COUNT(m.id) ... FROM sessions s LEFT JOIN messages m ON m.session_id = s.id GROUP BY s.id`. Never reference a `message_count` column.
-- **Inspect before freestyling.** First call: `SELECT name, sql FROM sqlite_master WHERE type='table' AND name IN ('sessions','messages')` — pure SELECT, always allowed. Match column names you read, never names you assume.
-- **Read-only rejections are a contract signal, not a hint to retry with tweaks.** If `Only SELECT/WITH queries are allowed` fires, drop the offending construct (PRAGMA → read `sqlite_master`; any write-shaped clause → remove it). Do NOT re-issue a slightly-different non-SELECT.
-- **Tail reads:** order by `sequence` or `created_at` on `messages` with a `session_id` filter; cap with `LIMIT`.
+`opencrabs_sqlite_query` is strictly read-only. Avoid guessed column names (`is_cron`, `message_count`, `finished_at` DO NOT EXIST):
+- **`sessions`:** `id, title, model, created_at, updated_at, archived_at, token_count, total_cost, provider_name, working_directory, category, auto_title_attempted, project_id`
+- **`messages`:** `id, session_id, role, content, sequence, created_at, token_count, cost, input_tokens, thinking`
+- **Message counting:** `SELECT s.id, COUNT(m.id) FROM sessions s LEFT JOIN messages m ON m.session_id=s.id GROUP BY s.id`
+- **Schema Discovery:** First call `SELECT name, sql FROM sqlite_master WHERE type='table' AND name IN ('sessions','messages')` before constructing novel queries.
 
 ### Check current context before you change anything (Hard Rule)
-Read the current state before you modify it — everywhere, not just issues/PRs:
-- **Issues/PRs:** re-read the issue/PR and its comments before commenting, updating, or closing (step 4 above).
-- **Git / commits:** `git fetch`, `git log`, and `git status` before committing, amending, or pushing — someone else may have moved `main` or added commits since you last looked.
-- **Code:** re-read the current file before editing it; don't edit from a remembered snapshot.
-
-Acting on a stale snapshot is how you clobber others' work, duplicate a fix, or close on outdated information.
-
+Read fresh state before modifying: issues/PRs (comments), Git (`fetch`/`status`), Code (`read_file` before edit). Never act from stale mental snapshots.
 
 ## Choosing Between Acting and Recording State (Cron / Autoheal / RSI)
 
@@ -483,13 +421,11 @@ Before acting on failure-rate claims from transcripts, re-derive them from live 
 - NEVER invent non-existent tool names (`done`, `stop`, `final`, `end`, `halt`) to signal completion.
 - When all required tool calls for a turn are complete, output a clear text response and STOP.
 
-
 ## RSI Preflight & Execution Rules (Hard Rules)
 
 1. **`slash_command` `/` Prefix Rule**: When calling `slash_command`, always prefix the command name with `/` — pass `command=/help`, not `command=help`.
 2. **`self_improve` Read-Before-Update Rule**: Always call `self_improve` with `action=read` on the target file before calling `action=update`. Copy `old_content` character-for-character from the read result.
 3. **SQL Schema Discovery Preflight Rule**: After any `opencrabs_sqlite_query` validation or query-shape failure, run schema discovery (`PRAGMA table_info(table_name)`, `.schema`) before retrying. Never guess column names.
-
 
 ## Rich Hickey Architecture & Gap Analysis (Hard Rule)
 
@@ -501,7 +437,6 @@ Before acting on failure-rate claims from transcripts, re-derive them from live 
 6. **File Size Limit**: Soft target: **250 LOC**. Hard ceiling: **500 LOC**. Split at 250; reject at 500. Test files (`*_test.rs`, `tests/*`, `*.test.*`, `*_spec.*`) are explicitly exempt.
 7. **Red/Green TDD & Intention-Revealing Naming**: Follow Red/Green TDD for behavior changes and optimize for high cohesion and low coupling.
 
-
 ## Axiom Autonomous Loop Tenets (Hard Rules)
 
 1. **Ground-Truth Verification**: Self-reporting success is prohibited. Progress is valid ONLY when backed by empirical terminal output (exit code 0).
@@ -511,13 +446,11 @@ Before acting on failure-rate claims from transcripts, re-derive them from live 
    - **Step 3 (Escalate)**: Switch to a higher reasoning model (`cx/gpt-5.6-sol`).
 3. **No Unverified Claims**: Never cite unverified claims from LLM outputs; stamp provenance and confidence: `(src: <url|file|session|unverified>, conf: <h|m|l>)`.
 
-
 ## Knowledge Base & Diagnostic Gates (Hard Rules)
 
 1. **Knowledge-Base First Pass (`kb_search` / `kb_ask`)**: Before performing web searches or assuming domain facts **about projects in this workspace**, run `kb_search` or `kb_ask` to inspect local project documentation. (Does not apply to general knowledge questions.)
 2. **Diagnostic Gate (`opencrabs doctor`)**: After any provider, model, key, or configuration change, run `opencrabs doctor` and verify all 12 health checks pass before declaring work complete.
 3. **GitHub Issue-PR Traceability**: Every PR body must explicitly contain `fixes #<issue_number>` to maintain bisectable history.
-
 
 ## Security & Memory Discipline (from SECURITY.md & BOOT.md)
 
@@ -525,12 +458,10 @@ Before acting on failure-rate claims from transcripts, re-derive them from live 
 2. **Write-Before-Reply Memory Rule**: When the user provides a preference, rule, or correction, write the one-liner memory entry to `memory/YYYY-MM-DD.md` or `MEMORY.md` *before* outputting response text.
 3. **Empirical Verification Gate**: Self-reporting success is prohibited. Verify file updates with follow-up tool calls (`cat`, `ls`, `git status`) before claiming completion.
 
-
 ## RSI Tool Transition & Phantom Loop Prevention (from rsi/improvements.md)
 
 1. **Single Tool-Search Transition Rule**: After `tool_search` returns a tool schema, the next call MUST be the tool itself, never a second `tool_search`. Two consecutive searches for the same capability indicate a loop — stop searching and invoke the tool.
 2. **Zero Phantom Tool Calls**: Never invent fabricated tool names to end a turn. When a task turn is complete, output a clear text response and stop.
-
 
 ## Command Code Harness Invariants (from Command Code V1 Architecture)
 
@@ -541,7 +472,6 @@ Before acting on failure-rate claims from transcripts, re-derive them from live 
 5. **Edit Preflight Line Match Guard**: Before invoking `edit_file`, verify the target line range with a fresh `read_file` to ensure `old_content` matches character-for-character including leading whitespace.
 6. **Plan-Task Worker Completion Rule (Hard)**: When running as a plan-task worker sub-agent, the FINAL action before closing the turn MUST be `plan complete #N` to mark the task done on the parent checklist. Never exit a plan-task session without explicitly completing the task — if the sub-agent ends without calling `plan complete`, the parent will see the task stuck as `InProgress` forever and the plan will not advance.
 
-
 ## Tool-Input Repair & Contract Design (from Ahmad Awais / Command Code)
 
 1. **Markdown Path Link Unwrapping**: If a `file not found` error occurs and the path contains Markdown link syntax (e.g. `[notes.md](http://notes.md)`), extract just the link text portion as the real filename and retry.
@@ -550,3 +480,20 @@ Before acting on failure-rate claims from transcripts, re-derive them from live 
 ## `write_file` Parent-Directory Gate
 
 **When `write_file` targets a path whose parent directory may not exist (new project/research/doc dirs), set `create_dirs: true` — or `mkdir -p` the parent first.** `create_dirs` defaults to false, so every write into a fresh directory dies with "Parent directory does not exist" (5 failures in 45 min on 2026-08-20: research/mzz, research/lad/L1+L2, src/docs). Writes to existing files need no flag. Violations: 5.
+
+## Native Task Workflows (Bankai Task DAG)
+
+Bankai is your primary content-addressed, immutable task substrate (`~/bankai`, tools `bankai_task`, `bankai_query`, `bankai_prime`). Use it natively for non-trivial, multi-step, and cross-session work.
+
+1. **Task Decomposition & DAG Creation**:
+   - Create beads with clear priority (1-5) and labels: `bankai_task action="create" title="..." description="..." priority="3" labels="backend,fix"`
+   - Wire dependencies explicitly: `bankai_task action="add_dep" id="bk-child" depends_on="bk-parent"`
+2. **Dependency-Aware Execution**:
+   - Query unblocked tasks: `bankai_task action="ready"`
+   - Claim before execution: `bankai_task action="claim" id="bk-XXXX" assignee="opencrabs"`
+   - Work in bounded 10-call tranches to eliminate context bloat.
+3. **Verifiable Milestone Delivery**:
+   - Upon empirical proof of completion (tests pass, verified output): `bankai_task action="complete" id="bk-XXXX"`
+   - File mid-task discoveries as linked sub-tasks immediately instead of fixing-and-forgetting.
+4. **Semantic Memory & Context Search**:
+   - Search task-memory mesh before major refactors: `bankai_prime query="<topic>"`

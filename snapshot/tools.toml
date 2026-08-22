@@ -6,10 +6,24 @@ enabled = true
 requires_approval = false
 timeout_secs = 30
 command = '''
-python3 -c 'import os,sqlite3,sys,json,re; sql=sys.argv[1].strip(); low=sql.lower(); forbidden=re.compile(r"\b(insert|update|delete|drop|alter|create|replace|vacuum|attach|detach|pragma|reindex)\b");
-if not (low.startswith("select ") or low.startswith("with ")): raise SystemExit("Only SELECT/WITH queries are allowed");
-if forbidden.search(low): raise SystemExit("Rejected non-read-only SQL");
-con=sqlite3.connect(os.path.expanduser("~/.opencrabs/opencrabs.db")); con.row_factory=sqlite3.Row; rows=[dict(r) for r in con.execute(sql).fetchall()]; print(json.dumps(rows, ensure_ascii=False, indent=2))' '{{sql}}''''
+bb -e '
+(require '\''[babashka.process :as p]
+          '\''[clojure.string :as str]
+          '\''[cheshire.core :as json])
+(let [sql (str/trim (first *command-line-args*))
+      low (str/lower-case sql)
+      forbidden #"(?i)\b(insert|update|delete|drop|alter|create|replace|vacuum|attach|detach|pragma|reindex)\b"]
+  (when-not (or (str/starts-with? low "select ") (str/starts-with? low "with "))
+    (println (json/generate-string {:error "Only SELECT/WITH queries are allowed"}))
+    (System/exit 1))
+  (when (re-find forbidden low)
+    (println (json/generate-string {:error "Rejected non-read-only SQL"}))
+    (System/exit 1))
+  (let [res (p/shell {:out :string :err :string :continue true}
+                     "sqlite3" "-json" "/Users/moe/.opencrabs/opencrabs.db" sql)]
+    (if (zero? (:exit res))
+      (println (if (str/blank? (:out res)) "[]" (:out res)))
+      (println (json/generate-string {:error (:err res)})))))' '{{sql}}''''
 
 [tools.headers]
 
@@ -20,6 +34,109 @@ description = "Read-only SELECT or WITH SQL query to run against ~/.opencrabs/op
 required = true
 coerce_empty_to = "keep"
 coerce_null_to = "keep"
+
+[[tools]]
+name = "bankai_task"
+description = "Primary task lifecycle tool for Bankai immutable task DAG. Supports action: create, claim, complete, update, add_dep, retrieve, ready, list."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 30
+command = "bb /Users/moe/.opencrabs/scripts/bankai_tool.clj task '{\"action\": \"{{action}}\", \"id\": \"{{id}}\", \"title\": \"{{title}}\", \"description\": \"{{description}}\", \"assignee\": \"{{assignee}}\", \"priority\": \"{{priority}}\", \"labels\": \"{{labels}}\", \"depends_on\": \"{{depends_on}}\"}'"
+
+[tools.headers]
+
+[[tools.params]]
+name = "action"
+type = "string"
+description = "Task action: create, claim, complete, update, add_dep, retrieve, ready, list"
+required = true
+default = "list"
+
+[[tools.params]]
+name = "id"
+type = "string"
+description = "Task ID (e.g. bk-1234) for claim, complete, update, add_dep, retrieve"
+required = false
+default = ""
+
+[[tools.params]]
+name = "title"
+type = "string"
+description = "Task title for create or update"
+required = false
+default = ""
+
+[[tools.params]]
+name = "description"
+type = "string"
+description = "Detailed task description for create or update"
+required = false
+default = ""
+
+[[tools.params]]
+name = "assignee"
+type = "string"
+description = "Assignee name for claim (defaults to opencrabs)"
+required = false
+default = ""
+
+[[tools.params]]
+name = "priority"
+type = "string"
+description = "Priority 1-5 (1=low, 5=critical)"
+required = false
+default = ""
+
+[[tools.params]]
+name = "labels"
+type = "string"
+description = "Comma-separated labels"
+required = false
+default = ""
+
+[[tools.params]]
+name = "depends_on"
+type = "string"
+description = "Target task ID for add_dep"
+required = false
+default = ""
+
+[[tools]]
+name = "bankai_query"
+description = "Query Bankai task DAG health, status, ready tasks, and diagnostics (action: doctor, health, setup_check, wisp_list)."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 30
+command = "bb /Users/moe/.opencrabs/scripts/bankai_tool.clj query '{\"action\": \"{{action}}\"}'"
+
+[tools.headers]
+
+[[tools.params]]
+name = "action"
+type = "string"
+description = "Query action: doctor, health, setup_check, wisp_list, integration_report"
+required = true
+default = "doctor"
+
+[[tools]]
+name = "bankai_prime"
+description = "Retrieve semantic task-memory context for a supplied query from the Bankai Mnesia/HNSW vector mesh."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 30
+command = "bb /Users/moe/.opencrabs/scripts/bankai_tool.clj prime '{\"query\": \"{{query}}\"}'"
+
+[tools.headers]
+
+[[tools.params]]
+name = "query"
+type = "string"
+description = "Topic or question to retrieve from Bankai semantic memory"
+required = true
+default = ""
 
 [[tools]]
 name = "parse_json"

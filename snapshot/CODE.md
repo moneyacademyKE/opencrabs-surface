@@ -339,3 +339,9 @@ When using `write_file` to create a file in a directory that may not exist yet, 
 
 1. **Validate before transforming**: When constructing tool call arguments, pass them as-is. If a tool rejects the input, read the error path and fix only the specific rejected field — do not speculatively reformat all fields.
 2. **Coercion order matters**: When fixing a rejected tool argument: first try removing `null` values, then try parsing stringified JSON (`"[\"a\"]"` → array), then try wrapping a bare string in an array. Never wrap before parsing.
+
+## Task-Driven Engineering with Bankai
+
+- **Link Commits to Task Beads:** Reference Bankai task IDs (`bk-*`) in atomic commit messages (e.g. `fix: reject flag tokens in claim parser (bk-616f)`).
+- **Spec-First Task Decomposition:** Before editing code across multiple files, create the task bead in Bankai (`bankai_task action="create"`).
+- **Regression Milestone Verification:** Never mark a Bankai bead `complete` without running the project test suite (`cargo test`, `bb test`, etc.) and verifying zero regression.

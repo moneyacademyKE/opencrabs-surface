@@ -246,3 +246,8 @@ This file can be updated as new security considerations emerge. Any changes shou
 ## Infinite Device Path Blocklist
 
 1. **Never request `read_file`** on `/dev/zero`, `/dev/urandom`, `/dev/stdin`, or `/dev/fd/*` — these are infinite streams that will hang the tool indefinitely. Check paths before reading if they might resolve to a device file.
+
+## Bankai Task Mesh Security
+
+1. **Local Domain Socket Isolation:** Bankai operates over the local Unix domain socket (`.bankai/bankai.sock`). Never bind the daemon to non-loopback network interfaces without mTLS and authorization.
+2. **Cryptographic Non-Repudiation:** Task mutations are recorded with immutable SHA-256 state hashes in Mnesia, ensuring verifiable audit trails for all agent task transitions.
