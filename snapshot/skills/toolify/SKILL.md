@@ -1,5 +1,4 @@
 ---
-trust: quarantined
 name: toolify
 description: When you want to integrate an external tool, API, MCP server, or service into a project — the wizard walks you through auth, config, env vars, client wrapper code, example usage, and (optionally) a smoke-test. Scoped to Next.js and Rails projects (the two primary stacks). Interactive Q&A pattern — starts with the tool name, asks structured questions until the integration is fully specified, then scaffolds files. Examples of tools to toolify — Stripe, Kit, Sanity, Notion, Neon, Supabase, Fathom, Rewardful, SavvyCal, Riverside, ScrapeCreators, Anthropic, OpenAI, Gemini, Twilio, Resend, Postmark, Vercel Blob, custom internal APIs. For MCP servers specifically, also handles the .mcp.json wiring. Triggers on "/toolify," "integrate X," "add X to this project," "wire up X," "set up the X integration," "hook up X," "connect X," "add MCP for X." Part of the -ify trifecta (skillify / toolify / loopify) for extending Claude Code. NOT for adding new SKILL.md files — that's skillify. NOT for cron/agent loops — that's loopify.
 metadata:

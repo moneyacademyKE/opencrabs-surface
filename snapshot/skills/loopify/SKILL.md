@@ -1,5 +1,4 @@
 ---
-trust: quarantined
 name: loopify
 description: When you want to set up an agent loop, cron-scheduled task, or recurring workflow that runs autonomously in Claude Code. Judgment layer on top of ScheduleWakeup, CronCreate, and the /loop skill — decides whether to use dynamic pacing (self-scheduling wake-ups), cron scheduling (fixed intervals), or a one-shot loop; tunes delay to avoid the 5-minute cache-miss cliff; designs idempotent loop bodies; sets bail-out conditions so loops don't run forever. Examples of loops to loopify — weekly review pulse, daily brief generation, hourly monitoring of a metric, periodic vault compilation, upstream-check for an adapted skill, sponsorship-pipeline refresh, YouTube-transcript-batch-download, morning startup routine. Triggers on "/loopify," "set up a loop," "schedule this task," "run this daily," "run this weekly," "cron this," "make this recurring," "automate this on a schedule," "keep this running until X." Part of the -ify trifecta (skillify / toolify / loopify) for extending Claude Code. NOT for authoring a new skill — that's skillify. NOT for adding a tool/integration — that's toolify.
 metadata:
