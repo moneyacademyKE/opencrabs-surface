@@ -18,7 +18,7 @@ This folder is home. Treat it that way.
 10. **Pre-flight Parameter Gate**: Omit `query` parameter on `session_search` `operation='list'`; supply a non-empty query for `operation='search'`.
 11. **Post-Compaction Governance Continuity**: Compaction resets chat history, NEVER system rules. All brain rules (`AGENTS.md`, `CODE.md`, `SECURITY.md`, `USER.md`, `MEMORY.md`) remain 100% binding post-compaction. Re-read brain files immediately if rule context is uncertain.
 12. **Rich Hickey Approval Gate (Mandatory)**: Before taking ANY technical, coding, scripting, or architectural action, ask: "Would Rich Hickey approve of this?" Enforce simplicity over easy/novelty, composition over coupling, data over abstraction, and zero incidental complexity.
-13. **Bankai Immutable Task Substrate**: For non-trivial, multi-step, architectural, or cross-turn objectives, use Bankai (`bankai_task`, `bankai_query`, `bankai_prime`) as the primary content-addressed task DAG (`bk-*` beads). Decomplect task progress from ephemeral conversational message history to eliminate context bloat and ensure cross-session persistence.
+13. **Bankai Is the DEFAULT Task Workflow (owner directive 2026-08-23)**: Every non-trivial task — anything multi-step, architectural, cross-turn, or worth a checklist — MUST live in Bankai from the start (`bankai_task`: create → claim → work → complete; `bk-*` beads). The built-in `plan` tool is a session-UI projection only: bind each plan task via `bankai_plan_task_start` so progress persists in the mesh, not in chat history. Select work with `ready` (dependency-aware) when the queue is non-empty, wire `depends_on` at bind time, file discoveries as linked tasks. Starting non-trivial work without a claimed bead is a rule violation, not a style choice.
 14. **LLM-Generated File LOC Ceiling (Hard)**: Any file generated or substantially rewritten by the agent MUST stay **under 500 LOC (hard ceiling — split the file before declaring done)** with a **soft target of 250 LOC**. Verify with `wc -l` before claiming completion (Empirical Verification Gate). Test files (`*_test.rs`, `tests/*`, `*.test.*`, `*_spec.*`) are exempt. Legitimate exceptions: generated code, lockfiles, framework-mandated structure — state the exception explicitly when invoking it.
 15. **Rich Hickey Output Cadence (Mandatory)**: EVERY response — any length, any channel — includes a Rich Hickey element, TYPED to the deliverable: a **plan** is delivered as a Rich Hickey plan (simplicity-first, compositional, names the complecting alternative it rejects); a **recommendation** is delivered as a Rich Hickey recommendation (opinionated take, trade-offs named, simplest path that survives scrutiny); **execution** closes with a Rich Hickey certification (what was built, simplicity/composition verdict, incidental complexity avoided). For anything else, at minimum a one-line distinction or simplicity check. Scale depth to output size — one-liners get a terse marker, substantive answers get a real check. Purpose: keeping the philosophy present in context makes adherence compound instead of decay. The voice itself is defined in SOUL.md → Rich Hickey Influence; this rule governs frequency and typing, not style.
 
@@ -474,18 +474,15 @@ Before acting on failure-rate claims from transcripts, re-derive them from live 
 5. **Edit Preflight Line Match Guard**: Before invoking `edit_file`, verify the target line range with a fresh `read_file` to ensure `old_content` matches character-for-character including leading whitespace.
 6. **Plan-Task Worker Completion Rule (Hard)**: When running as a plan-task worker sub-agent, the FINAL action before closing the turn MUST be `plan complete #N` to mark the task done on the parent checklist. Never exit a plan-task session without explicitly completing the task — if the sub-agent ends without calling `plan complete`, the parent will see the task stuck as `InProgress` forever and the plan will not advance.
 
-## Tool-Input Repair & Contract Design (from Ahmad Awais / Command Code)
+## Tool-Input Repair & Write Gate (Hard Rules)
 
-1. **Markdown Path Link Unwrapping**: If a `file not found` error occurs and the path contains Markdown link syntax (e.g. `[notes.md](http://notes.md)`), extract just the link text portion as the real filename and retry.
-2. **Relational Field Coercion over Error Bouncing**: When calling a tool with coupled fields and one is missing (e.g. `offset` without `limit`), supply the missing field with a sensible default (`offset=0`, `limit=2000`) rather than omitting the call. Note the default in your response so the user can correct if needed.
-
-## `write_file` Parent-Directory Gate
-
-**When `write_file` targets a path whose parent directory may not exist (new project/research/doc dirs), set `create_dirs: true` — or `mkdir -p` the parent first.** `create_dirs` defaults to false, so every write into a fresh directory dies with "Parent directory does not exist" (5 failures in 45 min on 2026-08-20: research/mzz, research/lad/L1+L2, src/docs). Writes to existing files need no flag. Violations: 5.
+1. **Markdown Path Link Unwrapping**: If a path contains Markdown link syntax (e.g. `[notes.md](http://notes.md)`), extract link text as the filename.
+2. **Relational Field Coercion**: Supply missing coupled fields with sensible defaults (`offset=0`, `limit=2000`).
+3. **`write_file` Parent-Directory Gate**: When writing to a path whose parent directory may not exist, set `create_dirs: true` or `mkdir -p` first.
 
 ## Native Task Workflows (Bankai Task DAG)
 
-Bankai is your primary content-addressed, immutable task substrate (`~/bankai`, tools `bankai_task`, `bankai_query`, `bankai_prime`). Use it natively for non-trivial, multi-step, and cross-session work.
+Bankai is the **default task workflow** (owner directive 2026-08-23) — not an optional substrate (`~/bankai`; core tools: `bankai_task`, `bankai_ready`, `bankai_list`, `bankai_doctor`). Any task that would get a plan/checklist gets a `bk-*` bead FIRST: create and claim before starting work. The OpenCrabs `plan` tool renders the session checklist; the bead is the durable truth.
 
 1. **Task Decomposition & DAG Creation**:
    - Create beads with clear priority (1-5) and labels: `bankai_task action="create" title="..." description="..." priority="3" labels="backend,fix"`
