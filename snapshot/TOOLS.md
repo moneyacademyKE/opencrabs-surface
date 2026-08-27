@@ -190,13 +190,13 @@ A provider/model that **cannot emit structured `tool_use` blocks** — it narrat
 
 - **Shape-first jq: probe before you pipe.** Before running a jq query against a new or unfamiliar JSON file, probe the shape once with `jq 'type, keys' <file>` (or `jq 'type'`), then write the query against the verified shape and guard iterations with `?` / `// empty` (e.g. `.items[]?.id`). Assume-shape queries caused 16 bash failures Aug 14–16 (`Cannot iterate over null`, `null has no keys`). Also: the string test is `startswith`, never `startsWith`. Violations: 16, last: 2026-08-16.
 
-- **Beads-loop bankai: queue from the graph, not the list.** When bankai-bound work exists, select with `bankai ready` (dependency-aware) instead of `bankai list`. Always pass `depends_on` (comma-separated OpenCrabs plan task ids) when calling `bankai_plan_task_start` — deps wire as blocking edges automatically. File mid-task discoveries as linked bankai tasks (create + `dep add`), never fix-and-forget in-session. Violations: deps on 1/21 tasks, discoveries 0/4 filed, last: 2026-08-15.
+- **Beads-loop bankai: queue from the graph, not the list.** When bankai-bound work exists, select with `bankai_task action="ready"` (dependency-aware) instead of `bankai_task action="list"`. Always pass `depends_on` when creating or chaining tasks — deps wire as blocking edges automatically. File mid-task discoveries as linked bankai tasks (`bankai_task action="create"` + `bankai_task action="add_dep"`), never fix-and-forget in-session.
 
 - **Consolidated Bankai Tools Pattern:** Use `bankai_task`, `bankai_query`, and `bankai_prime` as the primary unified interface to the Bankai DAG.
   - `bankai_task` with `action: "create"|"claim"|"complete"|"update"|"add_dep"|"retrieve"|"ready"|"list"`.
   - `bankai_query` with `action: "doctor"|"health"|"setup_check"|"wisp_list"|"integration_report"`.
   - `bankai_prime` with `query: "<topic>"` to warm/search semantic task memory.
-  - All calls route through `/Users/moe/.opencrabs/scripts/bankai_tool.clj` which automatically sanitizes unsupplied optional parameters (`{{placeholder}}` leakage safe).
+  - All calls route through `/Users/moe/.opencrabs/scripts/bankai_tool.clj` with JIT auto-healing and placeholder sanitization.
 
 **telegram_send large documents: one retry, then link.** Uploads >~30MB fail deterministically on this host ("A network error: error sending request for url …/SendDocument" — 15 lifetime failures incl. arm64 + linux tarballs, 2026-08-19). After ONE retry, stop hammering the upload and deliver a direct download URL (e.g. GitHub release asset) + sha256 + curl one-liner instead.
 
@@ -204,7 +204,7 @@ A provider/model that **cannot emit structured `tool_use` blocks** — it narrat
 
 **a2a_send: preflight discover, don't blind-send.** 8/16 lifetime failures cluster into: (1) peer unreachable (`error sending request for url 127.0.0.1:…`) → call action='discover' first; a dead endpoint is a report, not a retry; (2) `Task not found` on get/cancel → the task_id is stale, re-send instead of polling it; (3) peer HTTP 500 (`clojure.lang.Atom` method errors) → peer-side bug, report it, never retry; (4) `Message must contain at least one text part` → never send an empty message. Violations: 0, derived from ledger 2026-08-20.
 
-**bankai_plan_task_start preflight: gate, daemon, then shape.** 4/14 lifetime failures: (1) OpenCrabs plan gate raised → seed `plan add_tasks` + `plan start` before any bankai call; (2) `bankai daemon not healthy` → run `bankai_doctor` (and `bankai serve` if needed) first; (3) `jq: Cannot iterate over null` → probe JSON shape before piping (see shape-first jq rule); (4) shell `unexpected EOF` quoting error → write a script file instead of an inline one-liner. Violations: 0, derived from ledger 2026-08-20.
+**bankai_task workflow preflight: gate, daemon, then shape.** (1) When working on complex multi-turn goals, mirror plan steps to `bankai_task action="create"`; (2) `bankai_tool.clj` automatically ensures daemon health via JIT healing; (3) Query ready tasks with `bankai_task action="ready"`.
 
 - **`edit_file` parallel same-file race (2026-08-23):** never batch multiple `edit_file` calls to the SAME file in one tool block. They resolve against the same original snapshot; the last write wins and silently wipes the others. Same file → strictly sequential edits, re-read between when in doubt. (Lost two DownloadRepository edits this way; caught by compile error, not by the tool.)
 - **Alakey repo remotes:** `origin` = criticalinsight (upstream, token denied), `fork` = moneyacademyKE (push + PRs here). Build needs `JAVA_HOME=/opt/homebrew/opt/openjdk@21` (java not on PATH in fresh shells); adb at `/opt/homebrew/share/android-commandlinetools/platform-tools/adb` (also not on PATH).

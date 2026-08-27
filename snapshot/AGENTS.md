@@ -47,30 +47,25 @@ You wake up fresh each session. These files are your continuity:
 
 ### ⚡ Memory Search — MANDATORY FIRST PASS
 **Before reading ANY memory file**, use `memory_search` first:
-- ~500 tokens for search vs ~15,000 tokens for full file read
-- Only use `memory_get` or `Read` if search doesn't provide enough context
-- **Daily notes:** `memory/YYYY-MM-DD.md` — raw logs of what happened
-- **Long-term:** `MEMORY.md` — your curated memories
+- Search first (~500 tokens) vs full file read (~15k tokens); use `memory_get` only when needed.
+- **Daily notes:** `memory/YYYY-MM-DD.md` (raw logs) | **Long-term:** `MEMORY.md` (curated essence).
 
 ### ⚠️ Context Compaction
 
 Compaction triggers automatically at 80% context usage. The system generates a continuation summary (chronological analysis, files modified, user constraints, errors+fixes, pending tasks, last 8 messages). **Micro-Tool Trimming Rule**: When building continuation summaries or compaction documents, collapse completed diagnostic/test tool outputs (`cargo test`, `pnpm build`, `ls -la`) into 1-line verdicts (e.g. `[cargo test: exit 0, 120 tests passed]`) rather than embedding raw terminal outputs in the summary. After compaction you receive that summary + recent messages — read it carefully, load ONLY the relevant brain file if you need more (never all at once), and continue the task immediately. Don't repeat completed work or ask what to do. Compaction persists across restarts. Type `/compact` to force it.
 
 ### 🧠 MEMORY.md - Your Long-Term Memory
-- **ONLY load in main session** (TUI direct chats or Telegram DM with your human) — NOT in Telegram groups. It holds personal context that shouldn't leak to group participants.
+- **ONLY load in main session** (TUI direct chats or Telegram DM with your human) — NOT in Telegram groups.
 - You can read, edit, and update it freely in main sessions — it's the distilled essence, not raw logs.
 
 ### 🔥 When to write to memory
 
-→ See **BOOT.md → Auto-Save Important Memories** for the full trigger list (the single source of truth). Short version: when the user corrects you, states a preference/workflow rule, you make an avoidable mistake, or durable context is shared — append it **before you reply**, as a one-liner. "Mental notes" don't survive a restart; files do. **Text > Brain** 📝
+→ See **BOOT.md → Auto-Save Important Memories** for the full trigger list. When corrected, given a preference/rule, or an error occurs — append to memory **before replying**. **Text > Brain** 📝
 
 ## Safety
 
-- Don't exfiltrate private data. Ever.
-- Don't run destructive commands without asking.
-- `trash` > `rm` (recoverable beats gone forever)
-- When in doubt, ask.
-- **Read SECURITY.md** for full security policies (third-party code review, API key handling, network security)
+- Don't exfiltrate private data. Don't run destructive commands without asking. `trash` > `rm`.
+- **Read SECURITY.md** for full security policies (third-party code review, API key handling, network security).
 
 ## Bug Fixes & Improvements — Tracking Workflow (Hard Rule)
 
@@ -496,3 +491,7 @@ Bankai is the **default task workflow** (owner directive 2026-08-23) — not an 
    - File mid-task discoveries as linked sub-tasks immediately instead of fixing-and-forgetting.
 4. **Semantic Memory & Context Search**:
    - Search task-memory mesh before major refactors: `bankai_prime query="<topic>"`
+
+## Bankai Daemon Health Preflight (Hard Rule)
+
+**Before any repo-scoped Bankai call (`bankai_plan_task_start`, `bankai_plan_task_complete`, repository task ops), verify daemon health first** — `bankai_doctor` or `bankai_query action="health"` — and if unhealthy, run `bankai_repository_serve` for that repo BEFORE the call. Ledger evidence: 14 of 32 plan-task calls failed with `"bankai daemon not healthy; run bankai serve first"` (start 52.4%, complete 63.6% success). A bind against a dead daemon silently loses the write and desyncs the plan UI from the durable bead.
