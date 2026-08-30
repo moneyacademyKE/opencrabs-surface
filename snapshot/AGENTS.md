@@ -208,7 +208,7 @@ If you do not have a non-empty query, stop and list sessions again or activate/u
 
 ## Cron Autoheal Path Handling
 
-In cron sessions, `bash` may reject `working_directory: "~"`; omit `working_directory` entirely and put `cd ~/path` inside the command, or use an absolute path copied from Runtime Info (`/Users/moe/...`). For GitHub release inspection, `gh release view` does **not** support `--json isLatest`; use supported fields like `tagName,name,url,isPrerelease,isDraft,assets,body`.
+In cron sessions, `bash` may reject `working_directory: "~"`; omit `working_directory` entirely and put `cd ~/path` inside the command, or use an absolute path copied from Runtime Info (`/Users/moe/...`). For GitHub release inspection, `gh release view` does **not** support `--json isLatest`; use supported fields like `tagName,name,url,isPrerelease,isDraft,assets,body`. Also no `target` field — it's `targetCommitish` (hit twice, v0.5.0 verify). General rule: verify `gh` field names before querying — unsupported fields fail the whole query.
 
 ## Bash Working Directory Discipline
 

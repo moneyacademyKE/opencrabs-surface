@@ -345,3 +345,11 @@ When using `write_file` to create a file in a directory that may not exist yet, 
 - **Link Commits to Task Beads:** Reference Bankai task IDs (`bk-*`) in atomic commit messages (e.g. `fix: reject flag tokens in claim parser (bk-616f)`).
 - **Spec-First Task Decomposition:** Before editing code across multiple files, create the task bead in Bankai (`bankai_task action="create"`).
 - **Regression Milestone Verification:** Never mark a Bankai bead `complete` without running the project test suite (`cargo test`, `bb test`, etc.) and verifying zero regression.
+
+
+## Clojure & Shell Incident Lessons (theseus sessions, 2026-08)
+
+1. **`=` is category-strict in Clojure**: `(= 0.5 1/2)` is false. Use `==` or coerce with `double` when comparing across notations.
+2. **Whole-file rewrite > paren surgery**: if a file is fully read, rewriting it whole beats line edits — paren-count drift is the top recurring failure mode. Parse-check (`bb -e '(load-file "...")'`) after structural edits, before tests.
+3. **One edit per file per batch**: parallel edit calls to the same file race; the second write can silently not land while still reporting success. Serialize edits to one file.
+4. **Exit codes never come through pipes**: `cmd | tail` reports tail's exit. Receipts are `cmd; echo "exit=$?"` — a false-green was committed because a pipe masked exit 1 (fixed forward in theseus `f04310c`).
