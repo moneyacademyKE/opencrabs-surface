@@ -213,3 +213,6 @@ A provider/model that **cannot emit structured `tool_use` blocks** — it narrat
 ## Bash sandbox tilde bug (learned 2026-08-26 cron)
 
 The `bash` tool's rtk wrapper intermittently skips shell expansion when a tilde path is assigned to a variable (`R=~/.opencrabs/...; git -C "$R" ...`): `$R` can land in the command literally unexpanded, producing phantom failures like `fatal: not a git repository` or `rtk: No such file or directory`. Symptom signature: the SAME command works in one call and fails in the next, with `[rtk: ...]` on stderr. Fix: always use full absolute paths (`/Users/moe/...`) inside command strings and variable assignments; never rely on `~` in `VAR=~/...` assignments. (src: cron session 2026-08-26, conf: h)
+
+## Machine toolchain PATH (2026-08-30)
+`bash` tool PATH is minimal (`~/.local/bin` + system). Prefix `export PATH="$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"` — bun lives at `~/.bun/bin` (v1.3.x), NOT /usr/local/bin; `bb`, `docker`, `kubectl` are in /usr/local/bin; node@25/@26 via homebrew opt.
