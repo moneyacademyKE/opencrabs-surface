@@ -8,7 +8,7 @@ This folder is home. Treat it that way.
 
 1. **Write-Before-Reply Memory Rule**: When the user provides a preference, workflow rule, or correction, write the memory entry to `memory/YYYY-MM-DD.md` or `MEMORY.md` *before* outputting response text.
 2. **Infinite Device Path Blocklist**: Never request `read_file` on `/dev/zero`, `/dev/urandom`, `/dev/stdin`, or `/dev/fd/*` — these are infinite streams that hang the tool.
-3. **Partial-View Write Guard**: Before calling `write_file` or overwriting a file, verify you have read the full file (not a partial slice/window). Re-read if needed.
+3. **Partial-View Write Guard**: Before calling `write_file` or overwriting a file, verify you have read the full file (not a partial slice/window). Re-read if needed. *(Incident-indexed 2026-09-03, Theseus clone: a concurrent writer reverted whole edit hunks while receipts read "success", twice leaving files non-compiling; whole-file atomic writes + immediate `git diff` audits defeated it — landings `e0817ee`, `de7ec34`.)*
 4. **Python Prohibition & Babashka Policy**: Python is strictly prohibited. All script automation must use Babashka (`bb`). Avoid heredoc REPL forms (`bb - <<'CLJ'`); use `bb -e` or script files.
 5. **Empirical Verification Gate**: Self-reporting success is prohibited. Verify progress and file modifications with empirical terminal output (exit code 0, `cat`, `ls`, `git status`) before claiming completion.
 6. **Read-Only SQL Enforcement**: Restrict `opencrabs_sqlite_query` strictly to `SELECT` and `WITH` statements.
@@ -462,11 +462,11 @@ Before acting on failure-rate claims from transcripts, re-derive them from live 
 
 ## Command Code Harness Invariants (from Command Code V1 Architecture)
 
-1. **Partial-View Write Guard**: Before calling `write_file` or overwriting a file, verify you have read the **full file** (not just a partial slice/window). If your last `read_file` was a windowed read (offset/limit), re-read the complete file first to prevent silent content destruction.
+1. **Partial-View Write Guard**: Before calling `write_file` or overwriting a file, verify you have read the **full file** (not just a partial slice/window). If your last `read_file` was a windowed read (offset/limit), re-read the complete file first to prevent silent content destruction. *(Re-validated live 2026-09-03 — canonical receipt lives at Tier-1 rule 3; do not duplicate incident details here.)*
 2. **Adversarial Filename Repair**: On `file not found` errors, before reporting a missing path: (a) run `ls` on the parent directory, (b) check for Unicode discrepancies (curly quotes `‘` vs `'`, non-breaking spaces vs regular spaces), (c) try fuzzy matching (`AGENT.md` → `AGENTS.md`).
 3. **Non-Fatal Dead End Handling**: When a read returns empty content, past-EOF, or a truncation notice, treat it as an informative fact (`"file is empty"`, `"resume at offset=1847"`) — do not treat it as an error or apologize for it.
 4. **Subagent Response Bounding**: When receiving output from a subagent, summarize key findings if the raw response exceeds 2,000 lines or 16 KB before passing it into the parent session context.
-5. **Edit Preflight Line Match Guard**: Before invoking `edit_file`, verify the target line range with a fresh `read_file` to ensure `old_content` matches character-for-character including leading whitespace.
+5. **Edit Preflight Line Match Guard**: Before invoking `edit_file`, verify the target line range with a fresh `read_file` to ensure `old_content` matches character-for-character including leading whitespace. *(Incident-indexed 2026-09-03: concurrent writes make anchors stale — an "old text not found" rejection IS this guard firing; re-read once and retry once, never blind-retry.)*
 6. **Plan-Task Worker Completion Rule (Hard)**: When running as a plan-task worker sub-agent, the FINAL action before closing the turn MUST be `plan complete #N` to mark the task done on the parent checklist. Never exit a plan-task session without explicitly completing the task — if the sub-agent ends without calling `plan complete`, the parent will see the task stuck as `InProgress` forever and the plan will not advance.
 
 ## Tool-Input Repair & Write Gate (Hard Rules)
