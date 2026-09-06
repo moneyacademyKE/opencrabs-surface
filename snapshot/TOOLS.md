@@ -216,3 +216,11 @@ The `bash` tool's rtk wrapper intermittently skips shell expansion when a tilde 
 
 ## Machine toolchain PATH (2026-08-30)
 `bash` tool PATH is minimal (`~/.local/bin` + system). Prefix `export PATH="$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"` — bun lives at `~/.bun/bin` (v1.3.x), NOT /usr/local/bin; `bb`, `docker`, `kubectl` are in /usr/local/bin; node@25/@26 via homebrew opt.
+
+
+## Memory Recall With Scope/Subsystem Filters (bk-4ed6, 2026-09-06)
+
+- **Query tool:** `bb ~/.opencrabs/scripts/memq.bb search "<query>" [--scope user|internal|all] [--sys cron,rsi] [--days N] [--limit N] [--long-term]` — defaults to `--scope user`.
+- **Effect:** lines tagged `[scope:internal]` (cron receipts, RSI cycles, self-learning bookkeeping) never surface in user-facing recall unless explicitly asked. Internal writes stop polluting user recall at the read side.
+- **Write-side convention (tag when writing memory notes):** append `[scope:internal]` to a line that exists for bookkeeping rather than for the user; optionally add `[sys:<name>]` (e.g. `[sys:cron]`, `[sys:rsi]`, `[sys:self-learning]`). Untagged = user scope, no subsystem. `memq.bb tags` lists observed frequencies.
+- Verified 2026-09-06: fixture tests green (scope user/all/internal + sys filter + tags); real-memory probe in same session.
