@@ -158,3 +158,9 @@ SESSION:
 8. Tell the user Telegram is pushing a login code to their devices and to paste it here (digits only). When they paste it, write the digits into ~/.opencrabs/projects/tg-userbot-spike/code.txt.
 9. If the process prints PASSWORD_REQUIRED, ask for the 2FA password and write it to password.txt in the spike dir — never echo it. After AUTHORIZED, delete code.txt and password.txt.
 10. Verify: run `cargo run -- whoami` — expect `AUTHORIZED as <name>`. Report success and remind the user that userbot.session grants full account access (treat like keys.toml)."""
+
+[[commands]]
+name = "/autonomy"
+description = "Theseus autonomy tier status (earning mechanism): earned vs granted vs effective + what the next tier needs. Args: 'applied|reverted <file> [note]' records an outcome."
+action = "prompt"
+prompt = "Show Theseus's autonomy status (the earning mechanism in ~/theseus/theseus). Run: cd ~/theseus/theseus && OPENCRABS_HOME=$HOME/theseus bb autonomy — and report the earned/granted/effective tiers, the evidence line, and exactly what the next tier needs. If trailing arguments are given and match `applied <file> [note]` or `reverted <file> [note]`, run that subcommand against the same home FIRST (these record owner outcomes to the ledger — the owner's word is the source of truth; never record an outcome the owner did not explicitly state), then show fresh status. Never edit config.edn, never write the ledger yourself, never grant a tier."

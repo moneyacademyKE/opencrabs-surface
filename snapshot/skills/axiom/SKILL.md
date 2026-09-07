@@ -23,7 +23,7 @@ Instead, it uses OpenCrabs as the front door, then:
 
 - Treat `~/theseus/theseus` as the control repo unless the user explicitly says otherwise. Entrypoint is `bb goal` from the theseus root — never the old `~/Desktop/axiom` checkout (deleted; the GitHub copy is stale/broken at HEAD).
 - **Rollback has teeth:** Axiom's stall recovery executes `git reset --hard` against the config's `:workdir`. Only point `:workdir` at a dedicated directory with a clean, fully committed tree. Never aim it at a repo holding uncommitted work — it will eat them (learned the hard way, 2026-09-05).
-- Use **absolute** `:workdir` paths in configs — relative paths resolve against the invoking cwd, not the config's location.
+- Relative paths (`:workdir`, `:lock`, `:log-dir`) in a config resolve against the **config file's directory** (anchored at load, W2 2026-09-06) — a config means the same thing from any invoking cwd. Absolute paths work unchanged.
 - One runner per config: an atomic lockfile refuses concurrent runs on the same config (`Lock held by a live process`). That is correct behavior — don't fight it.
 - Lifecycle: `bb goal <config.edn> [--once]`, then `bb goal status|pause|resume|stop <config.edn>`.
 - After any change to `src/axiom/` or `test/axiom/`: run `bb test:axiom` (89 tests / 467 assertions, green at `a2900b0`).
