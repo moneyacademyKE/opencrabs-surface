@@ -13,6 +13,7 @@ The model API can fail mid-turn. When it does, multi-step work gets cut off: a p
 - If you ARE using the `plan` tool, the plan file itself is the signal — no inflight entry needed.
 
 ## Incompleteness signals (checked every pulse, in order)
+0. **Config integrity probe** (cheap, do first): `grep -n 'chat_permissions = "{' ~/.opencrabs/config.toml` — a string where a table belongs was the 2026-09-07 corruption (`"{}"` from an unknown writer ~14:44 local) that killed the userbot silently (B7). If the probe trips or the config looks wrong, run `opencrabs doctor`, restore from `~/.opencrabs/backups/`, and notify.
 1. **Inflight ledger** `~/.opencrabs/state/inflight.md` — live entry with timestamp >15 min old → interrupted.
 2. **Plan files** `~/.opencrabs/agents/session/.opencrabs_plan_*.json` — a plan whose active task is `in_progress`/started but not `completed`, not updated recently → interrupted. Read the pending task's description to know what to resume.
 3. **Task manager** `task_manager list` (show_completed=false) — any `in_progress` task → interrupted.

@@ -224,3 +224,7 @@ The `bash` tool's rtk wrapper intermittently skips shell expansion when a tilde 
 - **Effect:** lines tagged `[scope:internal]` (cron receipts, RSI cycles, self-learning bookkeeping) never surface in user-facing recall unless explicitly asked. Internal writes stop polluting user recall at the read side.
 - **Write-side convention (tag when writing memory notes):** append `[scope:internal]` to a line that exists for bookkeeping rather than for the user; optionally add `[sys:<name>]` (e.g. `[sys:cron]`, `[sys:rsi]`, `[sys:self-learning]`). Untagged = user scope, no subsystem. `memq.bb tags` lists observed frequencies.
 - Verified 2026-09-06: fixture tests green (scope user/all/internal + sys filter + tags); real-memory probe in same session.
+
+## Tool lessons (2026-09-07, userbot incident)
+- **rtk wrapper breaks shell variables in bash tool calls**: `X=/path; ls $X` expands EMPTY (var lost across `;`). Absolute paths verbatim in the command string only — never intermediate path vars. (Hit twice)
+- **Feature-gated Rust modules: verify compiled-in BEFORE diagnosing a "silent feature"**: local default-feature builds ≠ release.yml `--all-features` builds — /rebuild silently omits optional capabilities (cost: userbot "dead" for hours with perfect config). Check `grep -ac '<distinctive source string>' <binary>`; 0 = compiled out. Banner-only stdout + missing daily logs = log-darkness, NOT feature absence — grep the binary, not the logs.

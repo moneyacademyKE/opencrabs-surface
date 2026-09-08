@@ -357,3 +357,20 @@ When using `write_file` to create a file in a directory that may not exist yet, 
 - **Streams: `pipeTo` + catch, never `pipeThrough`** — `src.pipeThrough(ts)` runs an internal pipe nobody holds; when a client cancels mid-stream (workerd cancels response bodies natively; Node/undici rejects), the internal pipe rejects and becomes an unhandled rejection. Safe shape: `const ts = new TransformStream({...}); src.pipeTo(ts.writable).catch(() => {}); return ts.readable` (landed in infered client.js + worker.js, 2026-09-05). Node quirk that cost a debug hour: cancelling a constructed `Response` body also rejects an undici wrapper-internal read with reason `undefined` — invisible to `Promise.reject` hooks. In tests, absorb exactly that with `process.on('unhandledRejection', r => { if (r !== undefined) throw r; })` and stay loud on real rejections.
 
 5. **Dedup must shrink**: a refactor that grows the file means a shadowed duplicate survived — the old defn outlived the new one and gates ran the stale path. Before claiming a dedup done: LOC math must move the right direction (or be explicitly explained), and grep for the old symbol. (Incident 2026-09-06 `47819f3`: old album defn shadowed the new one, suite green on stale code.)
+
+## Default Methodology (owner directive 2026-09-07, conf: high)
+
+The four-stage default for analyze → decide → build → close. Twin of the Theseus canon (`~/theseus/brain/knowledge/goal-methodology.md`) — same method, OpenCrabs surface. Where a stage is already owned elsewhere in the brain files, this section points rather than duplicates.
+
+**Stage 0 — Hard rules.** Babashka is the default for anything scripted; Python is never invoked (AGENTS.md Tier-1 #4). Open questions take the Rich Hickey path: the simplest option that survives scrutiny, with the complecting alternative you rejected named alongside.
+
+**Stage 1 — Gap analysis before building** (extends AGENTS.md → Pre-Task Gap Analysis; now the format is fixed, not optional):
+1. Search the web for current capabilities — including the LATEST versions. What you remember is a snapshot; snapshots go stale.
+2. Feature-set differences as TABLES, with a reason per row — a table row without its reason is marketing.
+3. Benefits and trade-offs for each option.
+4. Complexity-vs-utility table: complexity is only owed when it deletes complexity already being paid, or closes a hole you actually have.
+5. Recommendation weighted across new power vs speed vs complexity vs trade-offs — state the weights; an unweighted verdict is a vibe.
+
+**Stage 2 — Implementation.** Implement ALL recommended actions from Stage 1; skipping one without naming why in the certification is a lie of omission. Red/green TDD (existing default). YAGNI: build what the analysis recommended, nothing it didn't. Prefer one-liner solutions where one line honestly carries the intent. Rich Hickey quality at every step: simplicity over easy, composition over coupling, data over abstraction, names that reveal intent.
+
+**Stage 3 — Close-out (all required).** Rich Hickey certification (AGENTS.md Tier-1 #15). Docs updated; atomic commits (one concern per commit). Learnings appended to `memory/YYYY-MM-DD.md`, distilled into MEMORY.md when durable; reusable patterns become brain knowledge files. When a similar problem appears later, SEARCH the learnings and patterns FIRST — a lesson that is never consulted was never learned (receipt: the 2026-09-07 phantom hunt re-derived an Aug-23 TOOLS.md rule from scratch because nobody searched).
