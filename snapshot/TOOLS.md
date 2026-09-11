@@ -228,3 +228,18 @@ The `bash` tool's rtk wrapper intermittently skips shell expansion when a tilde 
 ## Tool lessons (2026-09-07, userbot incident)
 - **rtk wrapper breaks shell variables in bash tool calls**: `X=/path; ls $X` expands EMPTY (var lost across `;`). Absolute paths verbatim in the command string only — never intermediate path vars. (Hit twice)
 - **Feature-gated Rust modules: verify compiled-in BEFORE diagnosing a "silent feature"**: local default-feature builds ≠ release.yml `--all-features` builds — /rebuild silently omits optional capabilities (cost: userbot "dead" for hours with perfect config). Check `grep -ac '<distinctive source string>' <binary>`; 0 = compiled out. Banner-only stdout + missing daily logs = log-darkness, NOT feature absence — grep the binary, not the logs.
+
+## Canva MCP (official, wired 2026-09-10)
+
+- **Dynamic tool**: `canva_mcp` (tools.toml) — `action="list"` or `action="call" tool_name="..." arguments="{...}"`. Tool names are kebab-case (`search-designs`, `export-design`, `get-design-content`); most accept a mandatory-ish `user_intent` string — always supply it.
+- **Plumbing**: `~/.opencrabs/scripts/canva_tool.clj` (bb runner) → `~/.opencrabs/scripts/canva-mcp.mjs` (Node stdio↔HTTP bridge) → `mcp-remote@latest` → `https://mcp.canva.com/mcp`.
+- **Auth**: OAuth tokens cached at `~/.mcp-auth/mcp-remote-v1/` (shared with Claude Desktop + Cursor configs). If calls start 401ing, delete the stale `*_tokens.json` and re-run `npx -y mcp-remote@latest https://mcp.canva.com/mcp` in a TUI session to re-trigger the browser dance.
+- **Gotcha**: `export-design` requires calling `get-export-formats` first — never guess a format. Template work uses `search-brand-templates`, never `search-designs`.
+
+## babashka.process p/shell arity bug (hit 2026-09-10)
+
+`(p/shell {:opts...} ["prog" "arg1"])` — the opts+VECTOR form — stringifies the vector into `"[prog arg1]"` and tokenizes it, dying with `Cannot run program "[prog"` (bb v1.12.218). **Use varargs instead**: `(apply p/shell {:opts...} "prog" "arg1" arg-coll)`. Empirically verified: varargs works, vector doesn't.
+
+### Canva MCP — Mandatory Skill Routing (pointer)
+
+Any design work via `canva_mcp` MUST route through the `canva-*` design skills (create/edit → design-director + edit-design; post-edit → brand-check; critique → design-feedback; comments → implement-feedback; formats → resize-for-social-media; batch → bulk-create). Mechanical reads (search/list/export-untouched) exempt. Full rule: AGENTS.md → "Canva MCP — Mandatory Design-Skill Routing" (owner directive 2026-09-10). All seven skills are `trust: provisional`; log runs to the outcomes ledger.

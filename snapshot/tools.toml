@@ -161,3 +161,35 @@ command = "gh issue create --title '{{title}}' --body '{{body}}'"
 params = []
 
 [tools.headers]
+
+[[tools]]
+name = "canva_mcp"
+description = "Execute official Canva MCP tools (list, search_designs, export_design, create_design, etc.) via the authenticated mcp-remote bridge."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 60
+command = "bb /Users/moe/.opencrabs/scripts/canva_tool.clj '{\"action\": \"{{action}}\", \"tool_name\": \"{{tool_name}}\", \"arguments\": \"{{arguments}}\"}'"
+
+[tools.headers]
+
+[[tools.params]]
+name = "action"
+type = "string"
+description = "MCP action: 'list' (list available Canva MCP tools) or 'call' (invoke a tool)"
+required = true
+default = "list"
+
+[[tools.params]]
+name = "tool_name"
+type = "string"
+description = "Name of the Canva MCP tool to call (when action is 'call')"
+required = false
+default = ""
+
+[[tools.params]]
+name = "arguments"
+type = "string"
+description = "JSON-encoded arguments string for the tool call (e.g. '{\"query\": \"marketing\"}')"
+required = false
+default = "{}"

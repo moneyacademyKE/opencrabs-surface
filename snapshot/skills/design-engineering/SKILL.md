@@ -24,6 +24,7 @@ Use the narrowest mode that matches the user's request. Do not dump every mode i
 | "Gesture/sheet/drag/swipe/spring/material" | Fluid interaction | Apply Apple-style direct manipulation, interruptibility, velocity handoff, and material hierarchy |
 | "Review this animation/motion code" | Motion review | Use a strict findings table and approval/block verdict; load `../review-animations/STANDARDS.md` when exact values are needed |
 | "What's it called when…" | Vocabulary lookup | Return the precise motion term first, then 1–2 close alternates only if useful |
+| "Make/edit/check a Canva design or deck" | Canva canvas | Route to the `canva-*` skills (see Canva canvas mode below); tools via the `canva_mcp` dynamic tool |
 
 ## Shared principles
 
@@ -151,6 +152,24 @@ Common terms:
 | Continuous horizontal text/content loop | **Marquee** |
 
 For the full glossary, use the legacy `animation-vocabulary` skill content if needed.
+
+## Canva canvas mode
+
+Use when the work lives in Canva, not in code — decks, social posts, flyers, brand-kit checks. Same doctrine as the code plane (anti-slop, constraint as feature), different substrate. All canvas work runs through the authenticated `canva_mcp` dynamic tool (33 live tools, verified 2026-09-10).
+
+Route by verb:
+
+| Intent | Skill |
+|---|---|
+| Edit a design | `canva-edit-design` — transaction protocol, commit approval gate |
+| Critique a design | `canva-design-feedback` — read-only |
+| Audit against brand kit | `canva-brand-check` — read-only |
+| Apply reviewer comments | `canva-implement-feedback` — one approval, then execute |
+| One design per data row | `canva-bulk-create` — DEGRADED: `autofill-design` absent from live surface; fall back to `create-design-from-brand-template` + transaction edits |
+| Resize for social platforms | `canva-resize-for-social-media` |
+| Visual doctrine, generation taste | `canva-design-director` |
+
+"Make a deck" forks here: React slide system → `slide-deck`; Canva presentation → canvas plane. If the user doesn't say which, ask once.
 
 ## Tool/use guidance
 

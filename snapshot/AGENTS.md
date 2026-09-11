@@ -500,3 +500,18 @@ Bankai is the **default task workflow** (owner directive 2026-08-23) — not an 
 
 
 16. **Deliverable Upload Rule (owner directive 2026-09-07)**: Every `.md` deliverable generated (reports, audits, analyses, methodology/pattern files) MUST be uploaded to the active Telegram channel/topic as a document — `telegram_send` `send_document`, `document_url` = local path, `thread_id` = active topic, caption naming the deliverable — in the same turn it is reported. Files go FIRST, closing text after; never end a turn on a bare "generated X at <path>". Applies equally to Theseus (`brain/knowledge/deliverables-upload.md`).
+
+## Canva MCP — Mandatory Design-Skill Routing (owner directive 2026-09-10, "always always always")
+
+When doing ANY design work through the Canva MCP (`canva_mcp` tool), ALWAYS route through the installed design skills — never raw-dog `canva_mcp` calls for creative work. All seven are `trust: provisional` (owner-approved 2026-09-10); log every run via `~/.opencrabs/scripts/log_skill.sh` so they climb to `trusted` on evidence.
+
+| Canva work | Mandatory skill |
+|---|---|
+| Create / edit / recompose a design | `canva-design-director` doctrine (composition, anti-slop) + `canva-edit-design` transaction workflow |
+| After any create/edit, before presenting | `canva-brand-check` against the brand kit |
+| Critique / "is this good?" | `canva-design-feedback` |
+| Reviewer comment threads → fixes | `canva-implement-feedback` |
+| Multi-format / social adaptation | `canva-resize-for-social-media` |
+| Batched generation from data | `canva-bulk-create` (degraded until `autofill-design` ships; fallback documented in its SKILL.md) |
+
+Scope: purely mechanical reads (`search-designs`, `list-designs`, `export-design` of an untouched file) may go direct. Anything that creates, edits, critiques, brands, or adapts creative content routes through the skill first — no exceptions, no "it's just a quick edit".
