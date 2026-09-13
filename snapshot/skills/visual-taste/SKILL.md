@@ -1,0 +1,157 @@
+---
+name: visual-taste
+description: Moe's poster visual language, verified by automated measurement of the Rotary Club of Nairobi South deck (13 pages, OCR geometry + palette forensics, re-runnable). Apply to EVERY poster/flier built via canva_mcp. Doctrine → references/aesthetic-analysis.md. Measurement harness → scripts/ (taste_probe.swift + score_claims.clj). Experiment log → EXPERIMENTS.md.
+trust: provisional
+---
+
+# Visual Taste — Rotary Poster Machine (v2.1, autoresearch run 002)
+
+Every claim below carries its evidence tag from the 2026-09-12 measurement run
+(`bb scripts/score_claims.clj`, n=13 pages of design `DAFj1rOFszE`):
+
+- **[verified 13/13]** — holds on every page, treat as law
+- **[dominant k/13]** — the majority pattern; deviation is visible
+- **[rule]** — prescriptive: the deck itself violates it; we enforce it anyway
+  (taste is what you refuse, including your own past sins)
+
+**The one rule above all rules:** the taste is a constitution. INVARIANTS never
+change between pages; VARIABLES are the only creative surface.
+
+---
+
+## Invariants
+
+1. **Masthead top band** [verified 13/13] — "Rotary" wordmark (h ≈ 0.075–0.126),
+   "Club of Nairobi South", "Since 1963", ALL fully within y < 0.33. Never skip.
+2. **Square canvas 1080×1080** [verified 13/13].
+3. **Headline block** [dominant 9/13] — exactly 2 stacked condensed caps lines,
+   zone y ≈ 0.30–0.57, line height 0.08–0.18 of canvas. Big text lives in THREE
+   zones, and the headline is only one of them [dominant 22/32 mid-band]:
+   wordmark big text rides the top band (y 0.06–0.16), date digits may ride the
+   footer (y ≈ 0.65–0.79). Neither is a headline. Headlines are horizontally
+   centered [dominant 24/32 within ±0.12 of canvas center]; date blocks may
+   sit left-aligned. The huge standalone date numeral is a rare flourish
+   (2/13 — REFUTED as a pattern), not a fixture.
+4. **Footer block** [verified anchors] — weekday line OPENS the block
+   (y ∈ 0.60–0.80, all 11 measured pages), contact line CLOSES it
+   (y ≥ 0.88, 5/5 pages with enquiries lines). Time + venue sit between
+   in either order. (Strict WHEN→TIME→WHERE→CONTACT was REFUTED at
+   5/11 — the deck interleaves time/venue. The anchors are the law; my
+   first band guess of 0.70–0.85 was itself refuted at 8/11 and widened
+   to the measured range.)
+5. **Dot-time style** [verified 9/9] — "6.30PM", never "6:30 PM".
+6. **No structural decoration** [verified 13/13 by inspection] — no cards, rules,
+   boxes, shadows. Type scale + air separate the bands.
+
+## Variables (the only creative surface)
+
+- Photograph (topic-appropriate, under navy scrim on dark pages)
+- One novelty accent hue max per poster [dominant 12/13 — only page 10
+  carries two; the rest carry zero or one. House colors (navy scrim,
+  blue, gold) don't count toward the budget.]
+- Headline subject (grammar invariant)
+- Footer slot strings
+
+## Typography — measured, not invented
+
+- Headline line height: **0.08–0.18 of canvas** [verified range, 13/13]
+- Headline-to-mean-line ratio: **1.6–3.8× (max/mean)** [verified 13/13] —
+  Run 002 correction: the earlier "16–38×" came from a judge display bug
+  (×10 for rounding, never divided back), exposed when a new artifact
+  (v3 poster) measured 2.25× against it. Harness fixed, claim restated.
+  The earlier-still 8:4:3:2 estimate had no measurement behind it at all.
+- Headlines ALL-CAPS [dominant — event posters 9/9; bio pages exempt]
+- Min text height **≥ 0.017 of canvas (≈18px @1080)** [rule — deck violates on
+  4/13 pages, min observed 0.013; those pages are unreadable in-feed. Enforce.]
+- Max 2 typeface families [rule]
+
+## Palette — corrected by measurement
+
+The earlier "blue+gold constitution" was **REFUTED (blue 4/13, gold 3/13)**.
+Measured truth:
+
+- **Dark pages (8/13):** navy scrim + off-white text dominate; accent hue sparse
+- **Light pages (2/13):** off-white ground, blue #0060b0 / gold #f0b000 leads
+- **3/13 pages are hybrid** — neither fully dark nor light
+- Blue/gold are *accents with meaning*, not omnipresent brand wash
+
+## Two Page Modes [verified: 8 dark, 2 light, 3 hybrid]
+
+**Mode A — Event poster (dark):** full-bleed photo + navy scrim + off-white text.
+**Mode B — Bio/info page (light):** off-white page, blue/gold type, no footer
+liturgy (page_02 pattern), body text allowed at smaller sizes.
+
+---
+
+## Generation Prompt Blocks (paste into generate-design)
+
+**Event poster (Mode A):**
+```
+A 1080x1080 Instagram event poster for Rotary Club of Nairobi South.
+Full-bleed photo of [TOPIC], dark navy scrim overlay for legibility. Top band
+(y<30%): "Rotary" wordmark, "Club of Nairobi South", "Since 1963" — off-white.
+Headline: exactly two stacked condensed heavy ALL-CAPS lines "[LINE 1]" /
+"[LINE 2]", each ~10-14% of canvas height, zone y 30-57%. Sentence-case subline
+"with [PARTNER]" under headline. Footer block: "[WEEKDAY] [ORDINAL DATE]" opens
+it, "ENQUIRIES: [PHONE]" closes it at the very bottom, "FROM 6.30PM" and
+"AT [VENUE]" between them. Single accent color [ACCENT] used once. No cards,
+no borders, no shadows, no gradients. Civic-ceremonial, print-poster feel.
+```
+
+**Bio page (Mode B):**
+```
+A 1080x1080 Instagram info page for Rotary Club of Nairobi South. Clean
+off-white background. Masthead top band in royal blue #0060b0. Condensed
+ALL-CAPS headline in blue or charcoal; sentence-case charcoal body, generous
+line spacing. Gold #f0b000 sparingly as accent. No cards, no borders, no
+shadows. Institutional, calm, print-editorial feel.
+```
+
+---
+
+## Mandatory Pre-Export Audit (run EVERY time, in order)
+
+1. `get-design-content` — read every string on every page.
+2. Masthead complete and top band? Footer opens weekday / closes contact?
+   "6.30PM" dot style?
+3. Headline ≤ 2 stacked caps lines, each ≥ 0.08 canvas height?
+4. Nothing below 18px equivalent? (The audit that would have caught the deck's
+   own 4 violations.)
+5. One novelty accent max? Every photo scrimmed?
+6. Integrity sweep: no typos (the deck shipped "INSTALIATION"), no overlapping
+   fragments ("TAconcert"), one text box per idea?
+7. Fix via editing transaction, commit, RE-READ content post-commit (substring
+   collateral is silent).
+8. Export, OCR the PNG (`swift scripts/taste_probe.swift out.png`), confirm
+   every invariant string present.
+
+## Orchestration API — battle-tested lessons (2026-09-12)
+
+- Flow: `start-editing-transaction` → `perform-editing-operations`
+  (page_index at ARGS level) → `commit`. Ops at start are silently ignored.
+- Grouped elements: `replace_text` misparses 3-segment IDs; page-scoped
+  `find_and_replace_text` cascades into groups. `resize_element` no-ops on
+  groups; `position_element` + `format_text` (color, font_size) work.
+- `find_and_replace_text` is substring matching — protect collisions with
+  sentinel swaps ("2026"→"YEARKEEP", edit, restore). Grep the page for the
+  find-string before firing.
+- `\n` in replacement text flattens — write single-line, let the box wrap.
+- Text centers on its BOX, not the canvas: `left = 540 − width/2`.
+- Verify color with band histogram (OCR is color-blind); verify clipping with
+  OCR completeness.
+- The deck masthead is a baked image fill — text surgery never touches it.
+
+## Hard Don'ts (each shipped once in the deck — never again)
+
+- Typos in headlines · overlapping fragments · sub-18px text
+- Reordered footer anchors (weekday opens, contact closes — always)
+- A second novelty accent · hype punctuation · >2 typefaces
+- Varying an invariant to "freshen" a page
+- **Stating a taste rule you haven't measured** — run the harness first
+
+## Reproducibility
+
+scripts/taste_probe.swift measures one page → JSON.
+scripts/score_claims.clj scores all claims against results → verdict table.
+program.md defines the research loop. EXPERIMENTS.md logs every run.
+The skill is the artifact; the harness is the judge; the deck is the eval set.
