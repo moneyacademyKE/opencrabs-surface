@@ -4,7 +4,7 @@ description: Moe's poster visual language, verified by automated measurement of 
 trust: provisional
 ---
 
-# Visual Taste — Rotary Poster Machine (v2.3 — stencil-work ban enforced)
+# Visual Taste — Rotary Poster Machine (v2.2 — canonical workflow enforced)
 
 Every claim below carries its evidence tag from the 2026-09-12 measurement run
 (`bb scripts/score_claims.clj`, n=13 pages of design `DAFj1rOFszE`):

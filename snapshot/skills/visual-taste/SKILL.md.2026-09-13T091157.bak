@@ -4,7 +4,7 @@ description: Moe's poster visual language, verified by automated measurement of 
 trust: provisional
 ---
 
-# Visual Taste — Rotary Poster Machine (v2.3 — stencil-work ban enforced)
+# Visual Taste — Rotary Poster Machine (v2.2 — canonical workflow enforced)
 
 Every claim below carries its evidence tag from the 2026-09-12 measurement run
 (`bb scripts/score_claims.clj`, n=13 pages of design `DAFj1rOFszE`):
@@ -93,6 +93,8 @@ liturgy (page_02 pattern), body text allowed at smaller sizes.
 
 ---
 
+---
+
 ## Canonical Production Workflow (MANDATORY — owner directive 2026-09-13)
 
 Every Canva poster job runs this pipeline, in order. No shortcuts, no
@@ -103,8 +105,7 @@ improvised routes. Proven end-to-end on the mentorship poster (v1–v5).
    prior designs ("Kangii", not "Kaangi"). Mine them; never invent. Later user
    messages override mined facts.
 2. **Orchestrate, don't generate (default).** `copy-design` the deck exemplar
-   (`DAFj1rOFszE`, addiction-recovery page) and rebuild via text/fill surgery —
-   but surgery that PLAYS the variables (rule two above), never a text stencil.
+   (`DAFj1rOFszE`, addiction-recovery page) and rebuild via text/fill surgery.
    `generate-design` is ONLY for compositions the owner explicitly asks to be
    new — and then the Mode A/B prompt blocks below plus the full audit apply.
 3. **Transaction protocol.** start → parse element map →
@@ -113,9 +114,8 @@ improvised routes. Proven end-to-end on the mentorship poster (v1–v5).
    Single-line replacements only. (Full trap list: "Orchestration API" below.)
 4. **Photo changes = fill swaps.** `update_fill` is swap-only. Photo must be
    context-true and licensed (Wikimedia CC or better); ingest needs public
-   HTTPS — Wikimedia direct URLs BOUNCE Canva's fetcher (UA policy), so route
-   via brief Cloudflare Pages staging + immediate teardown (approved pattern).
-   The navy scrim is the legibility lever — never trust a photo to be
+   HTTPS — brief Cloudflare Pages staging + immediate teardown is the approved
+   pattern. The navy scrim is the legibility lever — never trust a photo to be
    quiet on its own. Attribution goes in the asset's alt-text.
 5. **Verification gate — no exceptions.** Export PNG →
    `swift scripts/taste_probe.swift out.png` → every text line OCR confidence
@@ -131,7 +131,7 @@ A 1080x1080 Instagram event poster for Rotary Club of Nairobi South.
 Full-bleed photo of [TOPIC], dark navy scrim overlay for legibility. Top band
 (y<30%): "Rotary" wordmark, "Club of Nairobi South", "Since 1963" — off-white.
 Headline: exactly two stacked condensed heavy ALL-CAPS lines "[LINE 1]" /
-"[LINE 2]", each ~8-18% of canvas height (measured range, not a guess), zone y 30-57%. Sentence-case subline
+"[LINE 2]", each ~10-14% of canvas height, zone y 30-57%. Sentence-case subline
 "with [PARTNER]" under headline. Footer block: "[WEEKDAY] [ORDINAL DATE]" opens
 it, "ENQUIRIES: [PHONE]" closes it at the very bottom, "FROM 6.30PM" and
 "AT [VENUE]" between them. Single accent color [ACCENT] used once. No cards,

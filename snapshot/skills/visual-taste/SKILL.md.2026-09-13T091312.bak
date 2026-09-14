@@ -4,7 +4,7 @@ description: Moe's poster visual language, verified by automated measurement of 
 trust: provisional
 ---
 
-# Visual Taste — Rotary Poster Machine (v2.3 — stencil-work ban enforced)
+# Visual Taste — Rotary Poster Machine (v2.2 — canonical workflow enforced)
 
 Every claim below carries its evidence tag from the 2026-09-12 measurement run
 (`bb scripts/score_claims.clj`, n=13 pages of design `DAFj1rOFszE`):
@@ -113,9 +113,8 @@ improvised routes. Proven end-to-end on the mentorship poster (v1–v5).
    Single-line replacements only. (Full trap list: "Orchestration API" below.)
 4. **Photo changes = fill swaps.** `update_fill` is swap-only. Photo must be
    context-true and licensed (Wikimedia CC or better); ingest needs public
-   HTTPS — Wikimedia direct URLs BOUNCE Canva's fetcher (UA policy), so route
-   via brief Cloudflare Pages staging + immediate teardown (approved pattern).
-   The navy scrim is the legibility lever — never trust a photo to be
+   HTTPS — brief Cloudflare Pages staging + immediate teardown is the approved
+   pattern. The navy scrim is the legibility lever — never trust a photo to be
    quiet on its own. Attribution goes in the asset's alt-text.
 5. **Verification gate — no exceptions.** Export PNG →
    `swift scripts/taste_probe.swift out.png` → every text line OCR confidence
