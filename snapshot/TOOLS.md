@@ -225,6 +225,17 @@ The `bash` tool's rtk wrapper intermittently skips shell expansion when a tilde 
 - **Write-side convention (tag when writing memory notes):** append `[scope:internal]` to a line that exists for bookkeeping rather than for the user; optionally add `[sys:<name>]` (e.g. `[sys:cron]`, `[sys:rsi]`, `[sys:self-learning]`). Untagged = user scope, no subsystem. `memq.bb tags` lists observed frequencies.
 - Verified 2026-09-06: fixture tests green (scope user/all/internal + sys filter + tags); real-memory probe in same session.
 
+## Lesson Ledger With Tiers + Laplace (bk-3ec1 extract, bk-e455 tiers, 2026-09-14)
+
+- **Store:** `~/.opencrabs/state/lessons.jsonl` — one JSON per line: `{id, trigger, instruction, pitfall, scope, source, confidence, evidence_count, status, triage, confirmed, violated, supersedes, created}`.
+- **Capture (reflexio gate):** `bb ~/.opencrabs/scripts/lessons.bb observe "<trigger>" "<instruction>" [--triage noise|signal|deep]` — dedupes by normalized trigger and bumps evidence on recurrence; only opens a candidate when genuinely new. User corrections go here FIRST, brain files only after promote (AGENTS.md Tier-1 #17).
+- **Lifecycle:** candidate → (evidence ≥ 2, triage ≠ noise) `promote` → active → `retire`/`supersede`. `decay [21]` retires stale ev-1 candidates (noise at 7d).
+- **Tiers (GENesis steal):** active lessons rank by Laplace `(confirmed+1)/(confirmed+violated+2)` — library → advisory (ev≥3, lap≥0.60) → core (ev≥5, lap≥0.75). `confirm <id>` when the lesson prevented the failure, `violate <id>` when it recurred anyway.
+- **Session start:** `lessons.bb inject` prints core-tier lessons (AGENTS.md Every-Session step 6). `inject --advisory` widens to advisory.
+- **Other verbs:** `list [--status S] [--json]`, `show <id>`, `evidence <id> [+N]`, `edit <id> '<json-patch>'`, `extract` (candidates from skill_outcomes fail clusters), `stats`.
+- **Test overrides:** `--ledger <path>` / `--outcomes <path>` — fixtures never touch the real store.
+- Verified 2026-09-14: 15-test fixture battery green (observe dedupe, noise-promote refusal, tier walk library→advisory→core→violation-drop→restore, 7d noise decay vs 21d signal); real ledger 8 lessons intact.
+
 ## Tool lessons (2026-09-07, userbot incident)
 - **rtk wrapper breaks shell variables in bash tool calls**: `X=/path; ls $X` expands EMPTY (var lost across `;`). Absolute paths verbatim in the command string only — never intermediate path vars. (Hit twice)
 - **Feature-gated Rust modules: verify compiled-in BEFORE diagnosing a "silent feature"**: local default-feature builds ≠ release.yml `--all-features` builds — /rebuild silently omits optional capabilities (cost: userbot "dead" for hours with perfect config). Check `grep -ac '<distinctive source string>' <binary>`; 0 = compiled out. Banner-only stdout + missing daily logs = log-darkness, NOT feature absence — grep the binary, not the logs.
