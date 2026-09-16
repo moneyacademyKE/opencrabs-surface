@@ -518,3 +518,13 @@ When doing ANY design work through the Canva MCP (`canva_mcp` tool), ALWAYS rout
 | Batched generation from data | `canva-bulk-create` (degraded until `autofill-design` ships; fallback documented in its SKILL.md) |
 
 Scope: purely mechanical reads (`search-designs`, `list-designs`, `export-design` of an untouched file) may go direct. Anything that creates, edits, critiques, brands, or adapts creative content routes through the skill first — no exceptions, no "it's just a quick edit".
+
+## Three-Artifact Plan Convention (owner directive 2026-09-15)
+
+Every non-trivial task that goes through the `plan` tool projects three durable artifacts. The plan JSON is session state and dies with the session; these files are the permanent record. The plan tool remains the state machine — the artifacts are a projection of it, never a parallel tracker. Status lives in exactly one mirror; never duplicate it into chat or a second file.
+
+**Location:** `~/.opencrabs/projects/<project-slug>/files/plans/<task-slug>/` when a project context exists; otherwise `~/.opencrabs/plans/<task-slug>/`.
+
+1. **`implementation_plan.md`** — written at design time, BEFORE execution. Contents: goal, user-facing/breaking changes, open questions as GitHub alerts (`> [!NOTE]` / `> [!WARNING]`), file modifications grouped by component and tagged `[NEW]` / `[MODIFY]` / `[DELETE]`, verification steps (automated + manual). Approving the plan = approving this file. (Design-track sessions: the session .md is the working draft; snapshot it to this path at approval.)
+2. **`task.md`** — created the moment the plan is approved; the living checklist. Markers: `- [ ]` pending, `- [/]` in progress, `- [x]` completed, indented sub-items. Updated in the SAME turn as every `plan start` / `plan complete` — a stale task.md is a rule violation, not a cosmetic gap.
+3. **`walkthrough.md`** — written when the last task completes. Contents: what actually changed, verification commands with their real output (exit codes, not vibes), and embedded media (probe frames, screenshots) wherever the work produced any. This is the file the Deliverable Upload Rule (Tier 1 #16) ships to the active topic.
