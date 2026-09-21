@@ -374,3 +374,49 @@ The four-stage default for analyze → decide → build → close. Twin of the T
 **Stage 2 — Implementation.** Implement ALL recommended actions from Stage 1; skipping one without naming why in the certification is a lie of omission. Red/green TDD (existing default). YAGNI: build what the analysis recommended, nothing it didn't. Prefer one-liner solutions where one line honestly carries the intent. Rich Hickey quality at every step: simplicity over easy, composition over coupling, data over abstraction, names that reveal intent.
 
 **Stage 3 — Close-out (all required).** Rich Hickey certification (AGENTS.md Tier-1 #15). Docs updated; atomic commits (one concern per commit). Learnings appended to `memory/YYYY-MM-DD.md`, distilled into MEMORY.md when durable; reusable patterns become brain knowledge files. When a similar problem appears later, SEARCH the learnings and patterns FIRST — a lesson that is never consulted was never learned (receipt: the 2026-09-07 phantom hunt re-derived an Aug-23 TOOLS.md rule from scratch because nobody searched).
+## Change Discipline — Verify Before You Ship
+
+**Every change must pass this checklist before committing:**
+
+1. **Match the request.** Read the user's exact words — if they said "add X", don't remove Y in the same diff unless explicitly asked. Flag your own scope creep; if you're tempted to refactor beyond the ask, don't.
+2. **Surgical diffs.** If the diff touches more files than the user mentioned, pause and audit. Every changed file must directly serve the stated goal — no "while I'm here" cleanups. Before committing: `git diff --stat` — does the file count match your mental model?
+3. **No silent removals.** Never remove a public function, endpoint, or config option without the user explicitly asking. State what and why before deleting. When in doubt: deprecate + warn > delete.
+4. **Test discipline.** Before modifying any source file, check if a corresponding test exists; if not, create one before committing. Test the behavior, not the compilation — the actual runtime contract.
+5. **Build + lint before commit.** `cargo clippy --all-features` (zero warnings) + `cargo test --all-features` — never just `cargo test`; feature-gated test coverage hides otherwise. Match CI: check `.github/` workflows and run the same checks CI runs.
+6. **Verify the diff itself.** Run `git diff`: does it match what was requested, no more no less? Did you accidentally remove existing functionality? Every deleted line must be intentional.
+
+(Issue/PR tracking for every fix is owned by AGENTS.md → Bug Fixes & Improvements — Tracking Workflow.)
+
+## Hard Rules — Test Discipline
+
+- **No inline tests in source files.** No `#[cfg(test)] mod tests` blocks inside `src/` — tests belong in `src/tests/`, one file per module, registered in its mod.rs. Source files are production code only.
+- **Always verify your diff before committing** — tests catch real bugs that review misses (production bug caught by tests: `Instant::now().elapsed()` near startup was ~0, first request incorrectly slept).
+
+## Parameter Naming — Use Descriptive Names, Never Numeric Indices
+
+Never use positional/numeric parameter names (`param_0`, `field_1`) anywhere — API clients, provider implementations, config structs, signatures, test fixtures. Numeric indices are fragile: reordering breaks everything silently and tests become unreadable. Descriptive names are self-documenting and reorder-safe: `json!({"model": model, "voice": voice})` beats `vec![("0", ...), ("1", ...)]` — always.
+
+## Release Note Format — NEVER USE TABLES
+
+Release notes are plain text paragraphs with bullet points — never tables, never pipe-separated rows. Each release note gets **unique wording**: never reuse generic phrases ("another milestone", "excited to announce") across releases; write fresh, specific, concise sentences that reflect what actually changed. When updating docs for a new feature, check README, CHANGELOG, and URL reference lists — a feature is not "done" until its documentation is visible everywhere relevant.
+
+## Release Discipline — Non-Negotiable Checklist
+
+Before a release commit, ALL of:
+
+1. **Changelog entry** for every addressed issue — don't claim what isn't fixed.
+2. **URL path references at the bottom of the changelog** — every feature mentioned gets a link; no orphan references, no orphan links.
+3. **Version bump** in `Cargo.toml` matching the release tag.
+4. **Commit message matches the last release's** style, length, and structure — comprehensive, explicit changes, not generic.
+5. **Documentation complete** — README, CHANGELOG, reference lists all updated before the release commit.
+6. **Never create GitHub releases manually** when a Release CI workflow exists — tag push triggers the pipeline; wait for it, then verify the release exists. `gh release create` on top of CI makes duplicates you then have to delete.
+
+## Brain File Writing: Protocols, Not Essays
+
+**Every brain file entry must be a terse execution directive, not an explanation.** The model already knows the concepts from training data — brain files ACTIVATE patterns, they don't TEACH them. Bad: "OODA stands for Observe, Orient, Decide, Act...". Good: "Before acting: OBSERVE → ORIENT → DECIDE → ACT → VERIFY → UPDATE." If an entry explains WHAT something is, replace it with WHEN and HOW to use it. **Max 3 lines per rule** — if it needs more, it's an essay; consolidate.
+
+- `gh issue create`: use `--body-file` with the body written to a file first — heredoc bodies with backticks/quotes/pipes break shell quoting.
+- Never trust a lint's suggested fix without compiling it — apply, then `cargo check` immediately; the lint's "try this" is a hypothesis, not a fix.
+- Test-count derivations: anchor on line-start attributes (`^\s*#\[(tokio::)?test`), never loose grep; subtract `#[cfg(windows)]` twins.
+
+*(Full upstream text of these sections: `~/.opencrabs/research/defaults-v053/CODE.md` — ported 2026-09-21 in compacted form per the Protocols-Not-Essays doctrine.)*

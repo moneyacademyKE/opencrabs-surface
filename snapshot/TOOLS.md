@@ -254,3 +254,22 @@ The `bash` tool's rtk wrapper intermittently skips shell expansion when a tilde 
 ### Canva MCP — Mandatory Skill Routing (pointer)
 
 Any design work via `canva_mcp` MUST route through the `canva-*` design skills (create/edit → design-director + edit-design; post-edit → brand-check; critique → design-feedback; comments → implement-feedback; formats → resize-for-social-media; batch → bulk-create). Mechanical reads (search/list/export-untouched) exempt. Full rule: AGENTS.md → "Canva MCP — Mandatory Design-Skill Routing" (owner directive 2026-09-10). All seven skills are `trust: provisional`; log runs to the outcomes ledger.
+
+## Skill `globs:` frontmatter (path-scoped skill gate, #150)
+
+A `SKILL.md` may declare `globs:` so its topic is ENFORCED, not advisory: a tool call referencing a matching path is rejected (with the full skill body in the rejection) when the skill body is not in the current session context (fresh session or after compaction); the identical retry succeeds. Accepted forms — Cursor comma-string `globs: a/**, b.md`, inline flow `globs: [a/**, b.md]`, block list — quotes stripped; `metadata.globs` is ignored.
+
+- **Opt-in per skill:** no `globs` key = invisible to the gate; built-ins ship glob-less.
+- **Match:** case-insensitive against the normalized ABSOLUTE candidate path; `*` = one segment, `**` = recursive — write `**/` prefixes.
+- **Pattern resolution (narrow by design):** a leading `~` expands to the home directory; a WILDCARD-LED pattern (`**/x`, `*/x`, `[ab]/x`) is UNANCHORED and used verbatim, matching at any depth — never prefix it with a path, or the skill is silently disarmed; any other relative pattern anchors at the tool cwd; the result is normalized.
+- **Harvested:** `path`/`file_path`/`filePath` + path-like tokens in bash `command`; `grep`/`glob` tool `pattern`s never are.
+- **Exempt (recovery) tools:** `load_brain_file`, `read_file`, `slash_command`, `session_search`, `tool_search`, `write_opencrabs_file`, `execute_code` — a blocked agent must be able to re-arm itself.
+- **Sub-agents:** gated too (shared registry path) — one extra blocked round-trip per matching skill per fresh sub-agent.
+- **Fail-open law:** any gate-internal error passes the call through; malformed globs WARN once and are skipped.
+- **Master switch:** `[agent] skill_glob_gate = true` (default) in config.toml.
+
+
+
+## Bash macOS BSD-Userland Gotchas (`timeout` + GNU-only flags)
+
+macOS BSD userland is **not GNU coreutils** — assume GNU-only syntax fails (`split --additional-suffix`, `cat -A` → use `cat -v`). macOS ships no `timeout` binary (dies with exit 127). To bound runtime on macOS, use `perl -e 'alarm shift; exec @ARGV' 110 <cmd>` (zero deps, portable) or `gtimeout` if coreutils is installed. Never use bare `timeout`.
