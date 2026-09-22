@@ -42,7 +42,7 @@ executor = "shell"
 enabled = true
 requires_approval = false
 timeout_secs = 30
-command = "bb /Users/moe/.opencrabs/scripts/bankai_tool.clj task '{\"action\": \"{{action}}\", \"id\": \"{{id}}\", \"title\": \"{{title}}\", \"description\": \"{{description}}\", \"assignee\": \"{{assignee}}\", \"priority\": \"{{priority}}\", \"labels\": \"{{labels}}\", \"depends_on\": \"{{depends_on}}\"}'"
+command = """bb /Users/moe/.opencrabs/scripts/bankai_tool.clj task '{"action": "{{action}}", "id": "{{id}}", "title": "{{title}}", "description": "{{description}}", "assignee": "{{assignee}}", "priority": "{{priority}}", "labels": "{{labels}}", "depends_on": "{{depends_on}}"}'"""
 
 [tools.headers]
 
@@ -52,6 +52,8 @@ type = "string"
 description = "Task action: create, claim, complete, update, add_dep, retrieve, ready, list"
 required = true
 default = "list"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools.params]]
 name = "id"
@@ -59,6 +61,8 @@ type = "string"
 description = "Task ID (e.g. bk-1234) for claim, complete, update, add_dep, retrieve"
 required = false
 default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools.params]]
 name = "title"
@@ -66,6 +70,8 @@ type = "string"
 description = "Task title for create or update"
 required = false
 default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools.params]]
 name = "description"
@@ -73,6 +79,8 @@ type = "string"
 description = "Detailed task description for create or update"
 required = false
 default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools.params]]
 name = "assignee"
@@ -80,6 +88,8 @@ type = "string"
 description = "Assignee name for claim (defaults to opencrabs)"
 required = false
 default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools.params]]
 name = "priority"
@@ -87,6 +97,8 @@ type = "string"
 description = "Priority 1-5 (1=low, 5=critical)"
 required = false
 default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools.params]]
 name = "labels"
@@ -94,6 +106,8 @@ type = "string"
 description = "Comma-separated labels"
 required = false
 default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools.params]]
 name = "depends_on"
@@ -101,6 +115,8 @@ type = "string"
 description = "Target task ID for add_dep"
 required = false
 default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools]]
 name = "bankai_query"
@@ -109,7 +125,7 @@ executor = "shell"
 enabled = true
 requires_approval = false
 timeout_secs = 30
-command = "bb /Users/moe/.opencrabs/scripts/bankai_tool.clj query '{\"action\": \"{{action}}\"}'"
+command = """bb /Users/moe/.opencrabs/scripts/bankai_tool.clj query '{"action": "{{action}}"}'"""
 
 [tools.headers]
 
@@ -119,6 +135,8 @@ type = "string"
 description = "Query action: doctor, health, setup_check, wisp_list, integration_report"
 required = true
 default = "doctor"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools]]
 name = "bankai_prime"
@@ -127,7 +145,7 @@ executor = "shell"
 enabled = true
 requires_approval = false
 timeout_secs = 30
-command = "bb /Users/moe/.opencrabs/scripts/bankai_tool.clj prime '{\"query\": \"{{query}}\"}'"
+command = """bb /Users/moe/.opencrabs/scripts/bankai_tool.clj prime '{"query": "{{query}}"}'"""
 
 [tools.headers]
 
@@ -137,6 +155,8 @@ type = "string"
 description = "Topic or question to retrieve from Bankai semantic memory"
 required = true
 default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools]]
 name = "parse_json"
@@ -169,7 +189,7 @@ executor = "shell"
 enabled = true
 requires_approval = false
 timeout_secs = 60
-command = "bb /Users/moe/.opencrabs/scripts/canva_tool.clj '{\"action\": \"{{action}}\", \"tool_name\": \"{{tool_name}}\", \"arguments\": \"{{arguments}}\"}'"
+command = """bb /Users/moe/.opencrabs/scripts/canva_tool.clj '{"action": "{{action}}", "tool_name": "{{tool_name}}", "arguments": "{{arguments}}"}'"""
 
 [tools.headers]
 
@@ -179,6 +199,8 @@ type = "string"
 description = "MCP action: 'list' (list available Canva MCP tools) or 'call' (invoke a tool)"
 required = true
 default = "list"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools.params]]
 name = "tool_name"
@@ -186,10 +208,14 @@ type = "string"
 description = "Name of the Canva MCP tool to call (when action is 'call')"
 required = false
 default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
 
 [[tools.params]]
 name = "arguments"
 type = "string"
-description = "JSON-encoded arguments string for the tool call (e.g. '{\"query\": \"marketing\"}')"
+description = """JSON-encoded arguments string for the tool call (e.g. '{"query": "marketing"}')"""
 required = false
 default = "{}"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
