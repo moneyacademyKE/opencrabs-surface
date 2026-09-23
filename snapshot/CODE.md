@@ -218,6 +218,10 @@ If the project uses X pattern, use X pattern. Consistency beats "better" in isol
 
 Three similar lines of code is fine. Don't create a `GenericHandlerFactoryBuilder` for two use cases. Abstract when you have 3+ concrete cases that genuinely share logic.
 
+### Registries Rebuild From Source
+
+Registries that aggregate mutable state (tools, models, skills) REBUILD from their source files at the point of use — never mutate in place from multiple writers; order-dependent in-place writes are how shared catalogs rot. Stamp-cache only on hot paths (`HotToml` reads on every bash call); cold paths (e.g. `tool_search` discovery) just recompute. *(src: anoma.ly/notes/opencode-reloaded, conf: h)*
+
 ### Error Handling
 
 - **Return errors up the call stack.** Let the caller decide what to do.
