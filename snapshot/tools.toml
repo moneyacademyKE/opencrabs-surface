@@ -219,3 +219,41 @@ required = false
 default = "{}"
 coerce_empty_to = "keep"
 coerce_null_to = "keep"
+
+[[tools]]
+name = "gmail_mcp"
+description = "Execute Gmail tools from Google's official workspace MCP server (gmail_search, gmail_get, gmail_send, gmail_createDraft, gmail_sendDraft, gmail_listLabels, gmail_modify, gmail_batchModify, gmail_modifyThread, gmail_downloadAttachment, gmail_createLabel). Local build at ~/.opencrabs/mcp/workspace, OAuth creds in the macOS Keychain (owner-logged-in). Tool names are snake_case. NEVER call auth_clear (wipes the owner's stored login); gmail_send / gmail_createDraft are approval-gated by agent policy."
+executor = "shell"
+enabled = true
+requires_approval = false
+timeout_secs = 200
+command = """bb /Users/moe/.opencrabs/scripts/gmail_tool.clj '{"action": "{{action}}", "tool_name": "{{tool_name}}", "arguments": "{{arguments}}"}'"""
+
+[tools.headers]
+
+[[tools.params]]
+name = "action"
+type = "string"
+description = "MCP action: 'list' (list available Gmail tools) or 'call' (invoke a tool)"
+required = true
+default = "list"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "tool_name"
+type = "string"
+description = "Gmail MCP tool to call (when action is 'call'), e.g. gmail_search, gmail_get, gmail_send"
+required = false
+default = ""
+coerce_empty_to = "keep"
+coerce_null_to = "keep"
+
+[[tools.params]]
+name = "arguments"
+type = "string"
+description = """JSON-encoded arguments string for the tool call (e.g. '{"query": "in:unread", "max_results": 5}')"""
+required = false
+default = "{}"
+coerce_empty_to = "keep"
+coerce_null_to = "keep"

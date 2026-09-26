@@ -273,3 +273,12 @@ A `SKILL.md` may declare `globs:` so its topic is ENFORCED, not advisory: a tool
 ## Bash macOS BSD-Userland Gotchas (`timeout` + GNU-only flags)
 
 macOS BSD userland is **not GNU coreutils** — assume GNU-only syntax fails (`split --additional-suffix`, `cat -A` → use `cat -v`). macOS ships no `timeout` binary (dies with exit 127). To bound runtime on macOS, use `perl -e 'alarm shift; exec @ARGV' 110 <cmd>` (zero deps, portable) or `gtimeout` if coreutils is installed. Never use bare `timeout`.
+
+## Gmail MCP (official, wired 2026-09-25)
+
+- **Dynamic tool**: `gmail_mcp` (tools.toml) — `action="list"` or `action="call" tool_name="..." arguments="{...}"`. Tool names are snake_case: `gmail_search`, `gmail_get`, `gmail_send`, `gmail_createDraft`, `gmail_sendDraft`, `gmail_listLabels`, `gmail_modify`, `gmail_batchModify`, `gmail_modifyThread`, `gmail_downloadAttachment`, `gmail_createLabel`.
+- **Plumbing**: `~/.opencrabs/scripts/gmail_tool.clj` (bb runner) → `~/.opencrabs/scripts/gmail-mcp.mjs` (stdio bridge) → `node ~/.opencrabs/mcp/workspace/workspace-server/dist/index.js` (Google's official workspace-server, esbuild bundle, cloned repo).
+- **Auth**: macOS Keychain, service `gemini-cli-workspace-oauth`. First call without creds auto-launches the browser OAuth flow (server waits 5 min). Terminal/headless alternative: `sh ~/.opencrabs/mcp/gmail-login.sh` (prints OAuth URL; creds pasted via `/dev/tty`, never visible to the model). Re-auth: add `--force`.
+- **Scope lock**: `WORKSPACE_FEATURE_OVERRIDES` (set in gmail-mcp.mjs + gmail-login.sh) disables every feature group except `gmail.read`/`gmail.write` → consent is `gmail.readonly` + `gmail.modify` ONLY. The server also ships Calendar/Drive/Docs/Sheets/Chat — widen by removing groups from the override in BOTH files and re-logging in.
+- **Hard rules**: NEVER call `auth_clear` (wipes the owner's stored login). `gmail_send` / `gmail_sendDraft` / `gmail_createDraft` / `gmail_modify*` are approval-gated by agent policy (Tier 1: no email sends or mailbox mutations without explicit owner approval — reads are fine).
+- **Gotcha**: each call spawns the server fresh (~2-4s startup); first call after a fresh login may be slower (token refresh). gmail_search takes Gmail query syntax (`in:unread`, `from:x`, `label:y`).
