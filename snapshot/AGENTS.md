@@ -460,3 +460,19 @@ Every non-trivial task that goes through the `plan` tool projects three durable 
 ## Topic Behavior Rules (mutiny group, owner directives)
 
 - **YouTube feed links (topic 8657, 2026-09-21):** when moe posts any YouTube link in this topic, reply with the channel's RSS feed URL. `/channel/UC…` → feed directly. `/user/…`, `/c/…`, `@handle`, `/watch?v=…` → fetch the page with curl and extract `"externalId":"UC…"` (fallbacks: canonical `<link>`, `"channelId"`), then `https://www.youtube.com/feeds/videos.xml?channel_id=UC…` (the `?user=NAME` feed param also still resolves legacy /user/ links). Verify the feed returns the channel's XML before posting it. (src: telegram mutiny topic 8657, conf: h)
+## Sequential Work Mandate (owner directive 2026-10-03, Tier 1 HARD)
+
+Everything runs SEQUENTIALLY. One work chain at a time — no parallel execution of any kind. Owner directive after the monocode session (2026-10-03): concurrent writers ate verified hunks three times, background jobs raced live edits, zombie browser processes accumulated. Parallel speed bought nothing and cost three recovery cycles.
+
+**Never:**
+- Detach long commands (cargo/npm builds, test suites) and keep editing files while they run.
+- Spawn sub-agents or teams to work items in parallel, even "independent" ones.
+- Batch tool calls in one block when any of them writes (edit_file, write_file, bash mutations).
+- Test-fire or probe one thing while mutating another.
+
+**Always:**
+- One chain: edit → verify on disk → commit → THEN start the next task.
+- Long build needed? Start it, END the turn with a status line, and wait for the result push. Overlapping work with a running job is a violation, not efficiency.
+- Only read-only probes (ls/glob/grep/read_file) may interleave with anything.
+
+Sequential is the only mode. (Lesson lsn-1390d89d; receipts: monocode writer-race incidents, 2026-10-03.)
