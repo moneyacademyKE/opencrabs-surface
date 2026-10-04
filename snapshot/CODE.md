@@ -424,3 +424,11 @@ Before a release commit, ALL of:
 - Test-count derivations: anchor on line-start attributes (`^\s*#\[(tokio::)?test`), never loose grep; subtract `#[cfg(windows)]` twins.
 
 *(Full upstream text of these sections: `~/.opencrabs/research/defaults-v053/CODE.md` — ported 2026-09-21 in compacted form per the Protocols-Not-Essays doctrine.)*
+
+## Environment-dependent test spies + shared worker state (2026-10-03, lsn-0444b3db / lsn-71694882)
+
+A spy on a host object (`vi.spyOn(localStorage, "setItem")`) can **silently no-op** depending on environment (happy-dom + Node 26): writes succeed, failure branches never run, and tests fail — or worse, pass while testing nothing (ciRepairTracking quota case). Rule: failure injection only via global-binding swap (`vi.stubGlobal`), standardized in a repo test-helper; prove interception empirically once before trusting a green test.
+
+Parallel test workers sharing one backing store (e.g. one `--localstorage-file`) fabricate failures that vanish when run sequentially. Rule: prefer per-file deterministic stubs wired in vitest `setupFiles` over run flags; when failures disappear in isolation, suspect worker state before code.
+
+Receipt: monocode 28-failure incident — 23 phantoms (shared file), 5 real (no-op spies), all killed by `src/test-utils/setup-storage.ts` + `src/test-utils/localStorage.ts`.
