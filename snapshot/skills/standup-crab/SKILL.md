@@ -24,3 +24,9 @@ A draft for the owner to read aloud, not a report to act on.
 
 - Read-only git. Never fetch, pull, push, or commit.
 - Commit subjects are quoted as-is - this is a mirror of the tree, not a rewrite of history.
+
+## Quiet-day trigger
+
+`scripts/check.sh` is the cron pre-filter: `git log --since="24 hours ago"`
+per listed repo. Silent on a nothing-happened day = zero tokens.
+COMMITS/MISSING-REPO lines are the edition's cue.

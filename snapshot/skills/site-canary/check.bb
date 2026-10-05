@@ -24,7 +24,7 @@
     (catch Exception e
       (println label "| check error:" (.getMessage e) "|" url))))
 
-(def urls-file "/Users/moe/.opencrabs/state/site-canary/urls.txt")
+(def urls-file (str (System/getenv "HOME") "/.opencrabs/state/site-canary/urls.txt"))
 (if (.exists (java.io.File. urls-file))
   (doseq [line (str/split-lines (slurp urls-file))
           :let [line (str/trim line)]

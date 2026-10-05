@@ -27,3 +27,10 @@ Watches repos so the owner doesn't have to. Speaks only when something needs eye
 
 - Report-only: never comment, close, merge, or re-run CI. Ever.
 - `gh` missing or unauthenticated: say exactly that in one line. No improvised unauthenticated API calls.
+
+## Quiet-day trigger
+
+`scripts/check.sh` is the cron pre-filter: gh sweep per repo for issues/PRs,
+releases, and failed CI since the `since.txt` watermark (the edition owns
+bumping it; the script never writes). Silent exit = zero tokens.
+GH-FAIL/ACTIVITY/RELEASE/RED-CI lines are the edition's cue.

@@ -14,7 +14,7 @@ you only woke up because it printed something. Verify, report, get out.
   `DIRTY(9): /path has uncommitted changes`, `UNPUSHED(n)`, `BEHIND(n)`,
   `MISSING`, `FETCH-FAIL`.
 - Repo list: `~/.opencrabs/state/nightly-audit/repos.txt` (self-seeded on
-  first run; moe edits it to add or drop repos).
+  first run; the owner edits it to add or drop repos).
 
 ## The run
 

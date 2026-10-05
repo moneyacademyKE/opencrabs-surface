@@ -38,3 +38,11 @@ unchanged pages, no noise.
 - Never fetch with credentials. If a page needs login, say so and skip it.
 - Snapshots are the truth — never rewrite one except after a successful fetch.
 - Keep the report under ~20 lines; this runs on a cron and lands in a chat.
+
+## Quiet-day trigger
+
+`scripts/check.sh` is the cron pre-filter: fetches each watched URL, compares
+against its own baselines (`state/competitor-watch/trigger-baselines.txt`).
+GitHub release pages compare by release-tag set only (immune to nav-counter
+chrome). Silent exit = edition doesn't run = zero tokens. CHANGED/FETCH-FAIL
+lines are the edition's cue.

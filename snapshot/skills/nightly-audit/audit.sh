@@ -3,15 +3,15 @@
 # Read-only: never stages, commits, pushes, pulls, or fixes anything.
 # Used as a cron trigger_cmd: empty output short-circuits the run (0 tokens),
 # so the agent wakes only when something is actually wrong.
-LIST="${AUDIT_LIST:-/Users/moe/.opencrabs/state/nightly-audit/repos.txt}"
+LIST="${AUDIT_LIST:-$HOME/.opencrabs/state/nightly-audit/repos.txt}"
 
 if [ ! -f "$LIST" ]; then
   mkdir -p "$(dirname "$LIST")" 2>/dev/null
   {
     echo '# nightly-audit repo list — one repo path per line, # comments ok'
-    echo '/Users/moe/.opencrabs/src'
-    echo '/Users/moe/.opencrabs/src-crab'
-    echo '/Users/moe/bankai'
+    echo "$HOME/.opencrabs/src"
+    echo "$HOME/.opencrabs/src-crab"
+    echo "$HOME/bankai"
   } > "$LIST"
 fi
 

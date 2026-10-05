@@ -13,7 +13,7 @@ Report-only monitor. Never fixes anything, never edits the watchlist on its own.
 
 ## Run
 
-1. Execute `bb /Users/moe/.opencrabs/skills/site-canary/check.bb`. It prints ONLY failures, one per line: `label | problem | url`.
+1. Execute `bb "$HOME/.opencrabs/skills/site-canary/check.bb"`. It prints ONLY failures, one per line: `label | problem | url`.
 2. Empty output: reply exactly `site-canary: all green (N URLs).` where N is the non-comment line count of urls.txt. Nothing else.
 3. Failures: one line each, `<label> - <problem>`, plus at most one short likely-cause line covering the batch (e.g. "all three failing together smells like local network, not the sites").
 4. Never retry a failing URL within a run. One check each, no storms.
