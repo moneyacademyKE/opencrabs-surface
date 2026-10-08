@@ -27,23 +27,43 @@ https://stratechery.com/feed/ | Stratechery | biz
 
 ## The run
 
-1. Read `sources.txt`. If it doesn't exist, seed it from Default sources and
-   continue (first edition will be large; cap it at 10 items per source).
-2. For each source:
-   a. Fetch the feed (`curl -sL --max-time 15`). On failure: note
-      `name: unreachable` and move on — never drop a source for one bad morning.
-   b. Extract `<item>` (or `<entry>`) titles, links, and dates. Links are the
-      identity — dedupe on them, ignore dates you can't parse.
-   c. Keep only links not in `seen/<name>.txt`. No file yet → first edition:
-      keep the 5 newest, mark the rest seen silently.
-3. Compose the edition, grouped by section in this order: `kenya`, `tech`,
-   `biz`, `video`. Per item: one line, `[name] title` + the link. Cap the
-   whole edition at ~35 lines; if over, keep the newest and end with
-   `+N more <section> items`.
-4. If every source came back empty or unreachable: reply with one line —
-   `Quiet morning — 0 new items across N sources.` Still append to the log.
-5. After a successful edition: append the new links to each `seen/<name>.txt`
-   (trim any file over 2000 lines from the top), append `editions.log`.
+The whole pipeline lives in `~/.opencrabs/state/morning-newspaper/run.clj`.
+Run it with Babashka; do not improvise a fresh parser.
+
+1. `bb ~/.opencrabs/state/morning-newspaper/run.clj`
+   - It reads `sources.txt`, fetches every feed, keeps only links not in
+     `seen/`, resolves a summary per item, updates `seen/` and
+     `editions.log`, and prints the edition.
+   - `DRYRUN=1 bb ... run.clj` prints the edition without touching state —
+     use that for testing.
+   - If `sources.txt` is missing, seed it from Default sources below and
+     re-run (first edition is capped at 10 items per source).
+2. Output format: one or more messages separated by a line containing only
+   `@@MSG@@`, then a final line starting `@@STATS@@`.
+   - Post each message IN ORDER to the delivery topic with `telegram_send`
+     (activate it via `tool_search "telegram"` if needed):
+     chat `-1004427473737`, thread `9479`, markdown.
+   - End the turn with the stats line as plain text (drop the `@@STATS@@`
+     prefix) — it becomes the cron delivery footer.
+3. Quiet morning (no `@@MSG@@`, just one line from the script): that line IS
+   the whole reply. Post nothing else.
+4. A source that fails is noted on the stats line as `unreachable: <name>`.
+   Never drop a source for one bad morning.
+
+## Format
+
+Per item, two lines:
+
+```
+[Source Name] Title — https://link
+One-line summary, max ~200 chars.
+```
+
+The summary is grounded: the feed's own excerpt (Ars, Stratechery, Rust
+Blog), else the article page's `og:description`/`meta description`
+(Hacker News — hnrss descriptions are metadata, never use them as
+summaries). If neither yields text, the item is a single bare line.
+**Never invent a summary from the title.**
 
 ## Rules
 
@@ -52,4 +72,5 @@ https://stratechery.com/feed/ | Stratechery | biz
 - A source that fails 3 editions in a row gets flagged in the report:
   `name: down 3 mornings — consider removing from sources.txt`.
 - This runs on a cron and lands in a chat: tight lines, no preamble, no
-  closing pleasantries. The edition IS the message.
+  closing pleasantries. The edition parts go via `telegram_send`; your final
+  text is just the stats footer.
